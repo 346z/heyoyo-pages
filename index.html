@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>鹤悠悠 · 黄鹤楼数字漫游</title>
+<style>
+  :root{
+    --paper:#f6efe0; --paper2:#efe5cf; --card:#fffaf0;
+    --ink:#1b2a33; --ink2:#43565e; --ink3:#7c8b90;
+    --red:#9c2f27; --gold:#c19a4a; --gold2:#e3c479; --jade:#2f5d50;
+    --night:#0e1720; --night2:#16242f;
+    --serif:"Songti SC","STSong","SimSun","Noto Serif SC",serif;
+    --sans:"Microsoft YaHei","PingFang SC","Hiragino Sans GB",system-ui,sans-serif;
+    --shadow:0 22px 48px -34px rgba(20,32,38,.9);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);
+    -webkit-font-smoothing:antialiased;overflow-x:hidden}
+  body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:-1;
+    background:radial-gradient(circle at 18% 12%,rgba(227,196,121,.16),transparent 45%),
+      radial-gradient(circle at 88% 70%,rgba(156,47,39,.07),transparent 42%)}
+  a{color:inherit;text-decoration:none}
+  .wrap{width:min(1160px,calc(100% - 48px));margin:0 auto}
+  .serif{font-family:var(--serif)}
+  /* 导航 */
+  .nav{position:fixed;left:0;right:0;top:0;z-index:100;display:flex;align-items:center;
+    justify-content:space-between;padding:14px 22px;transition:.3s;
+    background:linear-gradient(180deg,rgba(10,18,24,.55),rgba(10,18,24,0));backdrop-filter:blur(6px)}
+  .nav.solid{background:rgba(246,239,224,.9);box-shadow:0 8px 26px -20px rgba(20,32,38,.8);
+    border-bottom:1px solid rgba(156,47,39,.1)}
+  .brand{display:flex;align-items:center;gap:10px;color:#f2e6c8;transition:.3s}
+  .nav.solid .brand{color:var(--ink)}
+  .brand .seal{width:26px;height:26px;display:grid;place-items:center;border-radius:5px;
+    background:var(--red);color:#f7ecd0;font-family:var(--serif);font-size:14px;letter-spacing:0}
+  .brand b{font-family:var(--serif);font-size:19px;font-weight:900;letter-spacing:.24em}
+  .brand span{font-size:9px;letter-spacing:.22em;color:rgba(242,230,200,.6)}
+  .nav.solid .brand span{color:var(--ink3)}
+  .links{display:flex;gap:20px;align-items:center}
+  .links a{font-size:12.5px;letter-spacing:.14em;color:rgba(242,230,200,.82);transition:.25s;position:relative}
+  .nav.solid .links a{color:var(--ink2)}
+  .links a:hover{color:var(--gold2)}
+  .nav.solid .links a:hover{color:var(--red)}
+  .links a::after{content:'';position:absolute;left:0;right:0;bottom:-6px;height:1px;background:currentColor;
+    transform:scaleX(0);transition:.25s;transform-origin:left}
+  .links a:hover::after{transform:scaleX(1)}
+  /* 首屏 */
+  .hero{position:relative;min-height:100vh;display:flex;align-items:center;overflow:hidden;
+    background:radial-gradient(120% 90% at 50% -10%,#20313c 0%,#14202a 42%,#0b1319 100%)}
+  .stars{position:absolute;inset:0;opacity:.75;
+    background-image:radial-gradient(1.4px 1.4px at 20% 18%,#fff,transparent),
+      radial-gradient(1.2px 1.2px at 62% 12%,#ffe9b0,transparent),
+      radial-gradient(1.6px 1.6px at 82% 30%,#fff,transparent),
+      radial-gradient(1px 1px at 34% 44%,#cfe6ff,transparent),
+      radial-gradient(1.3px 1.3px at 74% 58%,#fff,transparent),
+      radial-gradient(1px 1px at 12% 66%,#ffe9b0,transparent),
+      radial-gradient(1.2px 1.2px at 46% 78%,#fff,transparent),
+      radial-gradient(1px 1px at 90% 82%,#cfe6ff,transparent);
+    animation:twinkle 6s ease-in-out infinite alternate}
+  @keyframes twinkle{from{opacity:.45}to{opacity:.9}}
+  .moon{position:absolute;right:14%;top:12%;width:86px;height:86px;border-radius:50%;
+    background:radial-gradient(circle at 34% 30%,#fffdf2,#f0dca8 62%,#d9bd7c);
+    box-shadow:0 0 60px 18px rgba(240,220,168,.24),0 0 140px 50px rgba(240,220,168,.1);
+    animation:float 9s ease-in-out infinite}
+  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
+  /* 流星在最后面：压到楼体与光晕之下，被楼体正常遮挡 */
+  /* canvas 属替换元素，必须显式给宽高，否则会退回固有尺寸 300x150 */
+  #meteorCanvas{position:absolute;left:0;top:0;width:100%;height:100%;display:block;
+    z-index:0;pointer-events:none}
+  #towerPhoto{position:absolute;left:62%;bottom:0;transform:translateX(-50%);
+    width:min(380px,42vw);max-height:58vh;height:auto;object-fit:contain;z-index:1;
+    opacity:.9;
+    filter:drop-shadow(0 20px 36px rgba(0,0,0,.55)) brightness(.9) saturate(.94)}
+  /* 楼体背后的暖光晕 */
+  .tower-halo{position:absolute;left:62%;bottom:-4%;transform:translateX(-50%);
+    width:min(560px,62vw);height:min(380px,52vh);z-index:0;pointer-events:none;
+    background:radial-gradient(58% 62% at 50% 72%,rgba(230,193,121,.18),rgba(190,120,66,.09) 46%,transparent 72%),
+      radial-gradient(40% 34% at 50% 94%,rgba(10,16,20,.85),transparent 70%);
+    filter:blur(8px)}
+  @keyframes draw{to{stroke-dashoffset:0}}
+  .crane{position:absolute;left:-8%;width:52px;height:26px;opacity:0}
+  .crane svg{width:100%;height:100%;display:block}
+  .crane svg path{fill:none;stroke:#f4e6c4;stroke-width:2.2;stroke-linecap:round;opacity:.9}
+  .crane.c1{animation:fly1 26s linear infinite}
+  .crane.c2{animation:fly2 34s linear infinite;animation-delay:6s}
+  .crane.c3{animation:fly3 30s linear infinite;animation-delay:14s}
+  @keyframes fly1{0%{transform:translate(0,64vh) scale(.8);opacity:0}
+    12%{opacity:.9}50%{transform:translate(52vw,34vh) scale(1)}88%{opacity:.85}
+    100%{transform:translate(108vw,22vh) scale(.86);opacity:0}}
+  @keyframes fly2{0%{transform:translate(0,30vh) scale(.65);opacity:0}
+    14%{opacity:.7}50%{transform:translate(56vw,18vh) scale(.78)}90%{opacity:.7}
+    100%{transform:translate(110vw,10vh) scale(.7);opacity:0}}
+  @keyframes fly3{0%{transform:translate(0,78vh) scale(.55);opacity:0}
+    16%{opacity:.6}55%{transform:translate(60vw,52vh) scale(.7)}90%{opacity:.6}
+    100%{transform:translate(112vw,40vh) scale(.6);opacity:0}}
+  .hero-inner{position:relative;z-index:4;width:min(1160px,calc(100% - 48px));margin:0 auto;
+    padding:120px 0 60px}
+  /* 首屏 IP 形象 */
+  .hero-ip{position:absolute;left:78%;right:auto;bottom:0;height:min(32vh,270px);width:auto;z-index:3;
+    filter:drop-shadow(0 26px 44px rgba(0,0,0,.6));
+    animation:ipIn 1.5s cubic-bezier(.2,.7,.2,1) .2s both,ipFloat 7s ease-in-out 1.8s infinite}
+  @keyframes ipIn{from{opacity:0;transform:translateY(46px) scale(.94)}to{opacity:1;transform:translateY(0) scale(1)}}
+  @keyframes ipFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+  .eyebrow{font-size:10.5px;letter-spacing:.34em;color:#d9bd7c}
+  .hero h1{font-family:var(--serif);font-size:clamp(54px,9vw,104px);font-weight:900;
+    letter-spacing:.22em;margin:14px 0 0;color:#f7ecd0;text-indent:.22em;
+    text-shadow:0 10px 40px rgba(0,0,0,.5)}
+  .hero .lead{margin:18px 0 0;font-family:var(--serif);font-size:clamp(14px,1.7vw,18px);
+    letter-spacing:.28em;color:rgba(235,222,192,.8)}
+  .hero-actions{display:flex;gap:14px;margin-top:32px;flex-wrap:wrap}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:12px 26px;border-radius:999px;
+    font-size:13px;letter-spacing:.16em;cursor:pointer;border:1px solid transparent;
+    transition:.25s;font-family:var(--sans)}
+  .btn.solid{background:linear-gradient(120deg,#b8453a,#8c2820);color:#fdf3dc;
+    box-shadow:0 14px 30px -16px rgba(140,40,32,.9)}
+  .btn.solid:hover{transform:translateY(-2px);box-shadow:0 20px 36px -18px rgba(140,40,32,.9)}
+  .btn.ghost{background:rgba(247,236,208,.06);border-color:rgba(227,196,121,.45);color:#f0e0bd}
+  .btn.ghost:hover{background:rgba(227,196,121,.14);border-color:var(--gold2)}
+  .stats{list-style:none;display:flex;gap:clamp(18px,4vw,54px);padding:0;margin:56px 0 0;
+    flex-wrap:wrap}
+  .stats li{display:flex;flex-direction:column;gap:4px}
+  .stats b{font-family:var(--serif);font-size:clamp(22px,2.4vw,30px);color:#f0d9a0;letter-spacing:.04em}
+  .stats span{font-size:10.5px;letter-spacing:.2em;color:rgba(226,214,190,.56)}
+  .hero-note{display:inline-flex;align-items:center;gap:9px;margin-top:28px;
+    font-size:10.5px;letter-spacing:.16em;color:rgba(242,230,200,.62);transition:.25s}
+  .hero-note .dot{width:5px;height:5px;border-radius:50%;background:var(--gold2);
+    box-shadow:0 0 10px 2px rgba(227,196,121,.55)}
+  .hero-note:hover{color:var(--gold2)}
+  /* 章节通用 */
+  section{padding:clamp(60px,8vw,96px) 0;scroll-margin-top:76px}
+  /* 漫游紧随首屏，收紧上留白 */
+  #roam{padding-top:clamp(34px,4.5vw,52px)}
+  .sec-head{text-align:center;margin-bottom:clamp(30px,4vw,48px)}
+  .sec-head .eyebrow{color:var(--red);opacity:.85}
+  .sec-title{font-family:var(--serif);font-size:clamp(26px,3.4vw,38px);font-weight:900;
+    letter-spacing:.18em;margin:12px 0 0;text-indent:.18em}
+  .sec-title em{font-style:normal;color:var(--red)}
+  .sec-sub{margin:12px 0 0;font-size:12px;letter-spacing:.2em;color:var(--ink3)}
+  /* 档案 */
+  .archive{background:linear-gradient(180deg,rgba(239,229,207,0),rgba(239,229,207,.7) 30%,rgba(239,229,207,.7) 75%,rgba(239,229,207,0))}
+  .arch-grid{display:grid;grid-template-columns:.92fr 1.08fr;gap:clamp(20px,3vw,40px);align-items:center}
+  .arch-figure{position:relative;border-radius:22px;overflow:hidden;background:var(--card);
+    border:1px solid rgba(156,47,39,.12);box-shadow:var(--shadow);padding:14px}
+  .arch-figure img{display:block;width:100%;height:auto;max-height:520px;object-fit:contain;
+    filter:drop-shadow(0 22px 26px rgba(20,32,38,.18))}
+  .arch-figure .tag{position:absolute;left:16px;top:16px;font-size:10px;letter-spacing:.2em;
+    padding:5px 11px;border-radius:999px;background:rgba(27,42,51,.72);color:#f7ecd0}
+  .arch-figure.cutout{padding:18px 14px;background:
+    radial-gradient(120% 90% at 50% 8%,rgba(255,255,255,.9),rgba(247,238,218,.65) 55%,rgba(239,229,207,.9))}
+  .arch-figure.cutout img{max-height:540px;
+    filter:drop-shadow(0 26px 26px rgba(20,32,38,.22));transition:transform .8s cubic-bezier(.2,.7,.2,1)}
+  .arch-figure.cutout:hover img{transform:translateY(-6px) scale(1.015)}
+  .arch-figure.cutout .tag{background:rgba(156,47,39,.9)}
+  .arch-text p{margin:0 0 16px;font-size:13px;line-height:2.1;color:var(--ink2);letter-spacing:.04em}
+  .fact{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:22px 0 0}
+  .fact div{background:var(--card);border:1px solid rgba(156,47,39,.1);border-radius:12px;
+    padding:12px 14px}
+  .fact dt{font-size:10px;letter-spacing:.18em;color:var(--ink3);margin:0 0 5px}
+  .fact dd{margin:0;font-family:var(--serif);font-size:14px;letter-spacing:.06em}
+  .honor{display:inline-flex;align-items:center;gap:8px;margin-top:18px;padding:6px 14px;
+    border-radius:999px;font-size:11px;letter-spacing:.16em;color:#f7ecd0;
+    background:linear-gradient(120deg,#c19a4a,#8a6a15)}
+  /* 形制 */
+  .craft-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  .craft-card{background:var(--card);border:1px solid rgba(156,47,39,.1);border-radius:18px;
+    padding:12px 12px 18px;box-shadow:var(--shadow);transition:.3s}
+  .craft-card:hover{transform:translateY(-6px);border-color:rgba(193,154,74,.55)}
+  .craft-shot{position:relative;aspect-ratio:16/10;border-radius:12px;overflow:hidden;
+    background:#e9e0cc;margin-bottom:14px;box-shadow:inset 0 0 0 1px rgba(27,42,51,.08)}
+  .craft-shot img{width:100%;height:100%;object-fit:cover;object-position:50% 38%;display:block;
+    filter:saturate(.9) contrast(.98);transition:transform .7s}
+  .craft-shot img.pos-top{object-position:50% 18%}
+  .craft-card:hover .craft-shot img{transform:scale(1.05)}
+  .craft-card h3{font-family:var(--serif);font-size:16px;letter-spacing:.16em;margin:0 6px 8px}
+  .craft-card p{margin:0 6px;font-size:11.5px;line-height:1.9;color:var(--ink2);letter-spacing:.03em}
+  /* 海报展廊 */
+  .posters{position:relative;overflow:hidden;color:#ece0c4;
+    background:linear-gradient(180deg,#0d151c,#12202a 42%,#0d151c)}
+  .posters::before{content:'';position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(58% 40% at 84% 6%,rgba(227,196,121,.14),transparent 70%),
+      radial-gradient(48% 34% at 6% 92%,rgba(156,47,39,.16),transparent 72%)}
+  .posters .wrap{position:relative;z-index:1}
+  .posters .sec-head .eyebrow{color:var(--gold2);opacity:.9}
+  .posters .sec-title{color:#f7ecd0}
+  .posters .sec-title em{color:var(--gold2)}
+  .posters .sec-sub{color:rgba(233,222,196,.5)}
+  .poster-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+  .poster-card{margin:0;position:relative;border-radius:16px;overflow:hidden;
+    border:1px solid rgba(227,196,121,.16);background:#16232d;
+    box-shadow:0 26px 50px -34px rgba(0,0,0,.9);
+    transition:transform .5s,border-color .5s}
+  .poster-card:hover{transform:translateY(-6px);border-color:rgba(227,196,121,.5)}
+  .poster-card img{display:block;width:100%;aspect-ratio:3/4;object-fit:cover;
+    filter:saturate(.92) brightness(.95);
+    transition:transform .8s cubic-bezier(.2,.7,.2,1),filter .5s}
+  .poster-card:hover img{transform:scale(1.05);filter:saturate(1.05) brightness(1.02)}
+  .poster-card .badge{position:absolute;left:12px;top:12px;z-index:2;font-size:10px;letter-spacing:.18em;
+    padding:4px 10px;border-radius:999px;background:rgba(10,17,22,.66);
+    border:1px solid rgba(227,196,121,.35);color:#f0dfb6;backdrop-filter:blur(4px)}
+  .poster-card figcaption{position:absolute;left:0;right:0;bottom:0;padding:64px 16px 16px;
+    background:linear-gradient(180deg,rgba(8,14,19,0),rgba(8,14,19,.8) 52%,rgba(8,14,19,.94))}
+  .poster-card h3{margin:0;font-family:var(--serif);font-size:16px;letter-spacing:.14em;color:#f7ecd0}
+  .poster-card p{margin:5px 0 0;font-size:10.5px;letter-spacing:.14em;color:rgba(233,222,196,.6)}
+  .poster-foot{display:flex;align-items:center;justify-content:space-between;gap:14px;
+    flex-wrap:wrap;margin-top:30px;padding-top:20px;border-top:1px solid rgba(227,196,121,.16);
+    font-size:11.5px;letter-spacing:.14em;color:rgba(233,222,196,.55)}
+  .poster-foot a{color:var(--gold2);border-bottom:1px solid rgba(227,196,121,.35);padding-bottom:2px;transition:.25s}
+  .poster-foot a:hover{color:#fff;border-color:#fff}
+  /* 文创市集 */
+  .market{position:relative;
+    background:linear-gradient(180deg,rgba(239,229,207,0),rgba(239,229,207,.85) 14%,rgba(239,229,207,.85) 86%,rgba(239,229,207,0))}
+  .chips{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:0 0 clamp(22px,3vw,32px)}
+  .chip{font-size:11px;letter-spacing:.14em;padding:7px 16px;border-radius:999px;
+    border:1px solid rgba(27,42,51,.14);color:var(--ink2);background:rgba(255,250,240,.6);transition:.25s}
+  .chip.on{background:var(--ink);border-color:var(--ink);color:#f2e6c8}
+  .chip:hover{border-color:rgba(156,47,39,.45);color:var(--red)}
+  .chip.on:hover{color:#f2e6c8}
+  .market-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+  .product{background:var(--card);border:1px solid rgba(156,47,39,.1);border-radius:18px;
+    padding:12px 12px 18px;box-shadow:var(--shadow);transition:.32s}
+  .product:hover{transform:translateY(-6px);border-color:rgba(193,154,74,.55)}
+  .product .shot{position:relative;border-radius:12px;overflow:hidden;background:#f1e7d0;aspect-ratio:1}
+  .product .shot .ph{position:absolute;inset:7px;z-index:1;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:6px;border-radius:8px;
+    border:1px dashed rgba(193,154,74,.55);pointer-events:none;text-align:center;
+    background:linear-gradient(160deg,#fffdf6,#f7eed9 60%,#f1e4c8)}
+  .product .shot .ph svg{width:26px;height:26px;opacity:.55}
+  .product .shot .ph b{font-family:var(--serif);font-size:11.5px;font-weight:400;letter-spacing:.18em;color:#8d7647}
+  .product .shot .ph span{font-size:9px;letter-spacing:.03em;color:#a9997a}
+  .product .shot img{position:relative;z-index:2;width:100%;height:100%;object-fit:cover;display:block;transition:transform .7s}
+  .product:hover .shot img{transform:scale(1.055)}
+  .product .tag{position:absolute;left:10px;top:10px;z-index:3;font-size:9.5px;letter-spacing:.14em;
+    padding:3px 9px;border-radius:999px;background:rgba(156,47,39,.9);color:#fdf3dc}
+  .product h3{margin:14px 2px 0;font-family:var(--serif);font-size:14.5px;letter-spacing:.1em}
+  .product p{margin:6px 2px 0;font-size:11px;line-height:1.8;color:var(--ink2);letter-spacing:.03em}
+  .product .series{display:block;margin:11px 2px 0;padding-top:8px;width:calc(100% - 4px);
+    border-top:1px solid rgba(27,42,51,.1);font-size:9.5px;letter-spacing:.18em;color:var(--ink3)}
+  .market-banner{position:relative;margin-top:clamp(28px,4vw,42px);border-radius:20px;overflow:hidden;
+    padding:clamp(22px,3vw,32px) clamp(22px,3.4vw,40px);display:flex;align-items:center;
+    justify-content:space-between;gap:18px;flex-wrap:wrap;color:#f6ecd4;
+    background:linear-gradient(120deg,#1c3a33,#12241f 55%,#1a2019);
+    box-shadow:0 30px 60px -46px rgba(10,20,18,.9)}
+  .market-banner::after{content:'';position:absolute;right:-6%;top:-70%;width:50%;height:240%;
+    background:radial-gradient(circle,rgba(227,196,121,.16),transparent 62%);pointer-events:none}
+  .market-banner b{position:relative;display:block;font-family:var(--serif);font-size:clamp(18px,2.2vw,24px);
+    font-weight:900;letter-spacing:.14em;color:#f7ecd0;text-indent:.14em}
+  .market-banner p{position:relative;margin:8px 0 0;font-size:11.5px;letter-spacing:.1em;
+    color:rgba(233,222,196,.65)}
+  .banner-tag{position:relative;font-size:10.5px;letter-spacing:.18em;padding:7px 16px;
+    border-radius:999px;border:1px solid rgba(227,196,121,.4);color:#f0dfb6;white-space:nowrap}
+  /* 诗篇 */
+  .poems{background:linear-gradient(180deg,rgba(27,42,51,0),rgba(27,42,51,.05))}
+  .poem-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  .poem-card{position:relative;background:var(--card);border:1px solid rgba(156,47,39,.12);
+    border-radius:20px;padding:clamp(24px,3vw,34px);box-shadow:var(--shadow);overflow:hidden}
+  .poem-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
+    background:linear-gradient(180deg,var(--gold),var(--red))}
+  .poem-card .verse{font-family:var(--serif);font-size:clamp(15px,1.8vw,18px);line-height:2.4;
+    letter-spacing:.14em;margin:0;color:var(--ink)}
+  .poem-card .auth{display:block;margin-top:16px;font-size:11px;letter-spacing:.18em;color:var(--ink3)}
+  .poem-card .stamp{position:absolute;right:18px;bottom:16px;width:34px;height:34px;border-radius:5px;
+    border:1.5px solid rgba(156,47,39,.6);color:rgba(156,47,39,.75);display:grid;place-items:center;
+    font-family:var(--serif);font-size:12px;letter-spacing:1px;transform:rotate(-4deg)}
+  /* 3D 入口 */
+  .roam-band{position:relative;border-radius:26px;overflow:hidden;color:#f0e6cd;
+    background:linear-gradient(140deg,#182a34,#0d151c 60%,#1d2029);padding:clamp(30px,5vw,56px);
+    display:grid;grid-template-columns:1.15fr .85fr;gap:28px;align-items:center;
+    box-shadow:0 34px 70px -50px rgba(10,20,26,.95)}
+  .roam-band::after{content:'';position:absolute;right:-10%;top:-40%;width:70%;height:180%;
+    background:radial-gradient(circle,rgba(227,196,121,.16),transparent 62%);pointer-events:none}
+  .roam-band .eyebrow{color:var(--gold2)}
+  .roam-band h2{font-family:var(--serif);font-size:clamp(24px,3vw,34px);letter-spacing:.16em;
+    margin:12px 0 14px;font-weight:900;color:#f7ecd0}
+  .roam-band p{margin:0;font-size:12.5px;line-height:2;color:rgba(233,222,196,.7);letter-spacing:.05em}
+  .roam-list{list-style:none;padding:0;margin:22px 0 26px;display:flex;gap:10px;flex-wrap:wrap}
+  .roam-list li{font-size:10.5px;letter-spacing:.14em;padding:5px 12px;border-radius:999px;
+    border:1px solid rgba(227,196,121,.4);color:#f0dfb6}
+  .roam-actions{display:flex;gap:12px;flex-wrap:wrap}
+  .roam-art{position:relative;display:grid;place-items:center}
+  .roam-art .ring{position:absolute;width:min(280px,38vw);aspect-ratio:1;border-radius:50%;
+    border:1px solid rgba(227,196,121,.28);animation:spin 26s linear infinite}
+  .roam-art .ring:nth-child(2){width:min(200px,28vw);border-style:dashed;animation-direction:reverse;animation-duration:20s}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .roam-art .glyph{font-family:var(--serif);font-size:clamp(60px,9vw,110px);font-weight:900;
+    color:rgba(227,196,121,.9);text-shadow:0 0 40px rgba(227,196,121,.35);line-height:1}
+  .roam-art .small{position:absolute;bottom:0;font-size:10px;letter-spacing:.26em;color:rgba(227,196,121,.5)}
+  /* 页脚 */
+  footer{padding:46px 0 40px;background:#0d151c;color:rgba(233,222,196,.66);margin-top:clamp(40px,6vw,70px)}
+  .foot-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:26px}
+  .foot-grid h4{font-family:var(--serif);font-size:13px;letter-spacing:.2em;margin:0 0 12px;color:#f0dfb6}
+  .foot-grid p{margin:0;font-size:11.5px;line-height:2;letter-spacing:.04em}
+  .foot-links{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;font-size:11.5px}
+  .foot-links a:hover{color:var(--gold2)}
+  .copy{display:flex;justify-content:space-between;margin-top:30px;padding-top:18px;
+    border-top:1px solid rgba(227,196,121,.14);font-size:10.5px;letter-spacing:.16em}
+  .reveal{opacity:0;transform:translateY(24px);transition:opacity .8s ease,transform .8s cubic-bezier(.2,.7,.2,1)}
+  .reveal.in{opacity:1;transform:none}
+  @media (prefers-reduced-motion:reduce){
+    .reveal{opacity:1;transform:none;transition:none}
+    .crane,.stars,.moon,.ring{animation:none!important}
+    #towerSvg path.draw{animation:none;stroke-dashoffset:0}
+    .poster-card:hover, .product:hover, .craft-card:hover{transform:none}
+  }
+  @media (max-width:980px){
+    .arch-grid{grid-template-columns:1fr}
+    .craft-grid{grid-template-columns:1fr 1fr}
+    .roam-band{grid-template-columns:1fr}
+    .roam-art{order:-1;min-height:180px}
+    .foot-grid{grid-template-columns:1fr 1fr}
+    .hero-ip{height:min(22vh,180px);left:auto;right:-1%;opacity:.92}
+    .poster-grid{grid-template-columns:1fr 1fr}
+    .market-grid{grid-template-columns:1fr 1fr}
+    .links{gap:14px}
+  }
+  @media (max-width:680px){
+    .links{display:none}
+    .poem-grid{grid-template-columns:1fr}
+    .fact{grid-template-columns:1fr 1fr}
+    .hero-inner{padding-top:96px}
+    .stats{gap:22px;margin-top:36px}
+    .foot-grid{grid-template-columns:1fr}
+    .nav{padding:12px 16px}
+    .poster-grid,.market-grid{gap:12px}
+    .poster-card h3{font-size:14px}
+    .market-banner{align-items:flex-start}
+  }
+  @media (max-width:460px){
+    .poster-grid,.market-grid{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+
+<nav class="nav" id="nav">
+  <div class="brand">
+    <span class="seal">鹤</span>
+    <div>
+      <b>鹤悠悠</b>
+      <div><span>YELLOW CRANE TOWER</span></div>
+    </div>
+  </div>
+  <div class="links">
+    <a href="#roam">3D 漫游</a>
+    <a href="#archive">名楼档案</a>
+    <a href="#craft">建筑形制</a>
+    <a href="#posters">海报展廊</a>
+    <a href="#market">文创市集</a>
+    <a href="#poems">千古诗篇</a>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="stars"></div>
+  <div class="moon"></div>
+  <canvas id="meteorCanvas" aria-hidden="true"></canvas>
+  <div class="tower-halo"></div>
+  <img id="towerPhoto" src="assets/opt/hhl_tower.webp" alt="黄鹤楼楼体实景抠像" fetchpriority="high">
+  <img class="hero-ip" src="assets/opt/ip_huanghe_opt.webp" alt="鹤悠悠 IP 形象 鹤小仙">
+  <div class="crane c1"><svg viewBox="0 0 60 30"><path d="M2 18 C 12 6 22 6 30 14 C 38 6 48 6 58 18"/></svg></div>
+  <div class="crane c2"><svg viewBox="0 0 60 30"><path d="M2 18 C 12 6 22 6 30 14 C 38 6 48 6 58 18"/></svg></div>
+  <div class="crane c3"><svg viewBox="0 0 60 30"><path d="M2 18 C 12 6 22 6 30 14 C 38 6 48 6 58 18"/></svg></div>
+
+  <div class="hero-inner">
+    <div class="eyebrow">WUHAN · SNAKE HILL · 天下江山第一楼</div>
+    <h1>鹤悠悠</h1>
+    <p class="lead">黄鹤一去不复返，白云千载空悠悠</p>
+    <div class="hero-actions">
+      <a class="btn solid" href="roam.html">进入 3D 漫游 ↗</a>
+      <a class="btn ghost" href="#posters">海报 · 文创抢先看</a>
+    </div>
+    <ul class="stats">
+      <li><b>223</b><span>年始建</span></li>
+      <li><b>51.4</b><span>米通高</span></li>
+      <li><b>5</b><span>层飞檐</span></li>
+      <li><b>60</b><span>个翘角</span></li>
+    </ul>
+    <a class="hero-note" href="#posters"><span class="dot"></span>2026 秋季上新 · 飞檐系列海报 / 文创已上架</a>
+  </div>
+</header>
+
+<main>
+  <!-- 3D 漫游：放最前面，方便先讲漫游 -->
+  <section id="roam">
+    <div class="wrap">
+      <div class="roam-band reveal">
+        <div>
+          <div class="eyebrow">3D ROAMING · 数字场景</div>
+          <h2>走进去，登一次黄鹤楼</h2>
+          <p>纯前端 Three.js 程序化建模：五层飞檐、斗拱、金瓦与蛇山广场实时渲染，可环绕、可漫步、可昼夜。</p>
+          <ul class="roam-list">
+            <li>环绕查看</li><li>沉浸漫游</li><li>昼夜切换</li><li>四季流转</li>
+          </ul>
+          <div class="roam-actions">
+            <a class="btn solid" href="roam.html">开始漫游 ↗</a>
+            <a class="btn ghost" href="roam.html?pav=huanghe#">直飞楼前</a>
+          </div>
+        </div>
+        <div class="roam-art">
+          <div class="ring"></div>
+          <div class="ring"></div>
+          <div class="glyph">鹤</div>
+          <div class="small">THREE.JS · REAL-TIME</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 档案 -->
+  <section class="archive" id="archive">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <div class="eyebrow">ARCHIVE · 名楼档案</div>
+        <h2 class="sec-title">一座楼 <em>与一座城</em></h2>
+        <p class="sec-sub">蛇山之巅，长江之畔，屡毁屡建一千八百年</p>
+      </div>
+      <div class="arch-grid">
+        <figure class="arch-figure cutout reveal">
+          <span class="tag">实景 · 黄鹤楼</span>
+          <img src="assets/opt/hhl_tower.webp" alt="黄鹤楼实景抠像：五层飞檐与金瓦宝顶" loading="lazy" decoding="async">
+        </figure>
+        <div class="arch-text reveal">
+          <p>黄鹤楼始建于三国吴黄武二年（223 年），孙权筑楼以观江上军情。此后一千八百年间，它因兵火与江汛屡毁屡建，最后一次重建于 1985 年，以清同治楼为蓝本。</p>
+          <p>今楼五层飞檐，金色琉璃瓦，60 个翘角层层舒展，如黄鹤振翅。登楼西望，长江大桥与武汉三镇尽收眼底。</p>
+          <dl class="fact">
+            <div><dt>始建</dt><dd>223 年</dd></div>
+            <div><dt>通高</dt><dd>51.4 米</dd></div>
+            <div><dt>楼层</dt><dd>五层飞檐</dd></div>
+            <div><dt>屋顶</dt><dd>攒尖顶 · 金瓦</dd></div>
+          </dl>
+          <span class="honor">天下江山第一楼 · 江南三大名楼之首</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 形制 -->
+  <section id="craft">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <div class="eyebrow">ARCHITECTURE · 建筑形制</div>
+        <h2 class="sec-title">飞檐之上 <em>看匠心</em></h2>
+        <p class="sec-sub">从攒尖顶到葫芦宝顶，四个细节读懂黄鹤楼</p>
+      </div>
+      <div class="craft-grid">
+        <article class="craft-card reveal">
+          <div class="craft-shot"><img src="textures/model_shots/tower_aerial_clay.jpg" alt="黄鹤楼模型鸟瞰，五层攒尖顶收向一点" loading="lazy"></div>
+          <h3>攒尖顶</h3>
+          <p>五层屋面收向一点，形成锥形攒尖，是黄鹤楼最醒目的轮廓。</p>
+        </article>
+        <article class="craft-card reveal">
+          <div class="craft-shot"><img class="pos-top" src="textures/model_shots/tower_front_clay.jpg" alt="黄鹤楼模型正立面，檐角层层上翘" loading="lazy"></div>
+          <h3>60 个翘角</h3>
+          <p>每个檐角向上高高翘起，如黄鹤展翅，是「鹤归」意象的由来。</p>
+        </article>
+        <article class="craft-card reveal">
+          <div class="craft-shot"><img src="textures/model_shots/dougong_eave_clay.jpg" alt="斗拱与飞檐局部模型" loading="lazy"></div>
+          <h3>斗拱</h3>
+          <p>层层出挑的木构托架，把屋檐重量一级级传回立柱。</p>
+        </article>
+        <article class="craft-card reveal">
+          <div class="craft-shot"><img src="textures/model_shots/finial_roof_clay.jpg" alt="屋顶葫芦宝顶模型" loading="lazy"></div>
+          <h3>葫芦宝顶</h3>
+          <p>顶端的铜宝顶形如葫芦，兼作避雷针，是整楼的收势之笔。</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- 海报展廊：后续换图即上架，建议 3:4 竖版，短边 ≥ 1200px -->
+  <section class="posters" id="posters">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <div class="eyebrow">POSTER GALLERY · 海报展廊</div>
+        <h2 class="sec-title">一纸飞檐 <em>藏江城</em></h2>
+        <p class="sec-sub">限量艺术微喷 · 每张附编号与题签</p>
+      </div>
+      <div class="poster-grid">
+        <!-- 海报图位：assets/posters/p1.jpg … p6.jpg，建议 3:4 竖版，换图即上架 -->
+        <figure class="poster-card reveal">
+          <img src="assets/posters/p1.jpg" alt="海报《黄鹤凌空》" loading="lazy" decoding="async">
+          <span class="badge">限量 50 版</span>
+          <figcaption>
+            <h3>黄鹤凌空</h3>
+            <p>飞檐系列 · 01 · 艺术微喷</p>
+          </figcaption>
+        </figure>
+        <figure class="poster-card reveal">
+          <img src="assets/posters/p2.jpg" alt="海报《江天一色》" loading="lazy" decoding="async">
+          <span class="badge">艺术微喷</span>
+          <figcaption>
+            <h3>江天一色</h3>
+            <p>江城系列 · 02 · 夜色</p>
+          </figcaption>
+        </figure>
+        <figure class="poster-card reveal">
+          <img src="assets/posters/p3.jpg" alt="海报《鹤舞金檐》" loading="lazy" decoding="async">
+          <span class="badge">手写题签</span>
+          <figcaption>
+            <h3>鹤舞金檐</h3>
+            <p>飞檐系列 · 03 · 装饰艺术</p>
+          </figcaption>
+        </figure>
+        <figure class="poster-card reveal">
+          <img src="assets/posters/p4.jpg" alt="海报《蛇山春深》" loading="lazy" decoding="async">
+          <span class="badge">馆藏复刻</span>
+          <figcaption>
+            <h3>蛇山春深</h3>
+            <p>山水系列 · 04 · 水墨</p>
+          </figcaption>
+        </figure>
+      </div>
+      <div class="poster-foot reveal">
+        <span>海报可单张收藏，亦可整套装裱 · 每季更新一辑</span>
+        <a href="#market">看看同系列文创 →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 文创市集：后续换图即上架，建议 1:1 方图 -->
+  <section class="market" id="market">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <div class="eyebrow">CREATIVE MARKET · 文创市集</div>
+        <h2 class="sec-title">把一座楼 <em>带回家</em></h2>
+        <p class="sec-sub">飞檐、金瓦、诗笺化作日常小物</p>
+      </div>
+      <div class="chips reveal">
+        <span class="chip on">全部</span>
+        <span class="chip">冰箱贴</span>
+        <span class="chip">书签</span>
+        <span class="chip">盲盒</span>
+        <span class="chip">纸品</span>
+        <span class="chip">家居</span>
+        <span class="chip">配饰</span>
+      </div>
+      <div class="market-grid">
+        <!-- 文创图位：把实拍图放到 assets/market/m1.jpg … m8.jpg，建议 1:1 方图，放好即显示 -->
+        <article class="product reveal">
+          <div class="shot">
+            <div class="ph" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#b08a3e" stroke-width="1.3"><rect x="3" y="4" width="18" height="15" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M4 16l4.5-4.5 3.5 3.5 3-3 4 4"/></svg>
+              <b>实拍图位</b><span>assets/market/m1.jpg</span>
+            </div>
+            <img src="assets/market/m1.jpg" alt="鹤归冰箱贴" loading="lazy" onerror="this.remove()">
+            <span class="tag">限定</span>
+          </div>
+          <h3>鹤归冰箱贴</h3>
+          <p>立体飞檐配金瓦釉面，一贴带走整座楼。</p>
+          <span class="series">飞檐系列</span>
+        </article>
+        <article class="product reveal">
+          <div class="shot">
+            <div class="ph" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#b08a3e" stroke-width="1.3"><rect x="3" y="4" width="18" height="15" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M4 16l4.5-4.5 3.5 3.5 3-3 4 4"/></svg>
+              <b>实拍图位</b><span>assets/market/m2.jpg</span>
+            </div>
+            <img src="assets/market/m2.jpg" alt="金瓦书签" loading="lazy" onerror="this.remove()">
+          </div>
+          <h3>金瓦书签</h3>
+          <p>黄铜镂空，一线飞檐夹进书页。</p>
+          <span class="series">形制系列</span>
+        </article>
+        <article class="product reveal">
+          <div class="shot">
+            <div class="ph" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#b08a3e" stroke-width="1.3"><rect x="3" y="4" width="18" height="15" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M4 16l4.5-4.5 3.5 3.5 3-3 4 4"/></svg>
+              <b>实拍图位</b><span>assets/market/m3.jpg</span>
+            </div>
+            <img src="assets/market/m3.jpg" alt="鹤小仙盲盒" loading="lazy" onerror="this.remove()">
+            <span class="tag">新品</span>
+          </div>
+          <h3>鹤小仙盲盒</h3>
+          <p>六款形象随机一只，桌面上的小神仙。</p>
+          <span class="series">IP 系列</span>
+        </article>
+        <article class="product reveal">
+          <div class="shot">
+            <div class="ph" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#b08a3e" stroke-width="1.3"><rect x="3" y="4" width="18" height="15" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M4 16l4.5-4.5 3.5 3.5 3-3 4 4"/></svg>
+              <b>实拍图位</b><span>assets/market/m4.jpg</span>
+            </div>
+            <img src="assets/market/m4.jpg" alt="诗笺帆布袋" loading="lazy" onerror="this.remove()">
+          </div>
+          <h3>诗笺帆布袋</h3>
+          <p>崔颢诗稿做底纹，原色帆布厚实耐用。</p>
+          <span class="series">诗笺系列</span>
+        </article>
+        <article class="product reveal">
+          <div class="shot">
+            <div class="ph" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#b08a3e" stroke-width="1.3"><rect x="3" y="4" width="18" height="15" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M4 16l4.5-4.5 3.5 3.5 3-3 4 4"/></svg>
+              <b>实拍图位</b><span>assets/market/m5.jpg</span>
+            </div>
+            <img src="assets/market/m5.jpg" alt="晴川明信片" loading="lazy" onerror="this.remove()">
+          </div>
+          <h3>晴川明信片</h3>
+          <p>江城八景一套八张，寄一张给远方。</p>
+          <span class="series">江城系列</span>
+        </article>
+        <article class="product reveal">
+          <div class="shot">
+            <div class="ph" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#b08a3e" stroke-width="1.3"><rect x="3" y="4" width="18" height="15" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M4 16l4.5-4.5 3.5 3.5 3-3 4 4"/></svg>
+              <b>实拍图位</b><span>assets/market/m6.jpg</span>
+            </div>
+            <img src="assets/market/m6.jpg" alt="五层纸雕灯" loading="lazy" onerror="this.remove()">
+            <span class="tag">限定</span>
+          </div>
+          <h3>五层纸雕灯</h3>
+          <p>开灯即是夜里的黄鹤楼，暖光不刺眼。</p>
+          <span class="series">夜游系列</span>
+        </article>
+        <article class="product reveal">
+          <div class="shot">
+            <div class="ph" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#b08a3e" stroke-width="1.3"><rect x="3" y="4" width="18" height="15" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M4 16l4.5-4.5 3.5 3.5 3-3 4 4"/></svg>
+              <b>实拍图位</b><span>assets/market/m7.jpg</span>
+            </div>
+            <img src="assets/market/m7.jpg" alt="云纹香插" loading="lazy" onerror="this.remove()">
+          </div>
+          <h3>云纹香插</h3>
+          <p>黄铜云鹤小香插，附赠线香一支。</p>
+          <span class="series">云鹤系列</span>
+        </article>
+        <article class="product reveal">
+          <div class="shot">
+            <div class="ph" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#b08a3e" stroke-width="1.3"><rect x="3" y="4" width="18" height="15" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M4 16l4.5-4.5 3.5 3.5 3-3 4 4"/></svg>
+              <b>实拍图位</b><span>assets/market/m8.jpg</span>
+            </div>
+            <img src="assets/market/m8.jpg" alt="云鹤丝巾" loading="lazy" onerror="this.remove()">
+          </div>
+          <h3>云鹤丝巾</h3>
+          <p>真丝印花，青金配色，可系包也可披肩。</p>
+          <span class="series">云鹤系列</span>
+        </article>
+      </div>
+      <div class="market-banner reveal">
+        <div>
+          <b>更多文创，持续上新</b>
+          <p>线上先看，线下取货 · 黄鹤楼东门文创店 · 每季一辑主题</p>
+        </div>
+        <span class="banner-tag">2026 AUTUMN SERIES</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 诗篇 -->
+  <section class="poems" id="poems">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <div class="eyebrow">POETRY · 千古诗篇</div>
+        <h2 class="sec-title">诗在楼上 <em>楼在诗里</em></h2>
+        <p class="sec-sub">崔颢题诗，李白搁笔；一别扬州，孤帆远影</p>
+      </div>
+      <div class="poem-grid">
+        <article class="poem-card reveal">
+          <p class="verse">昔人已乘黄鹤去，此地空余黄鹤楼。<br>
+            黄鹤一去不复返，白云千载空悠悠。<br>
+            晴川历历汉阳树，芳草萋萋鹦鹉洲。<br>
+            日暮乡关何处是？烟波江上使人愁。</p>
+          <span class="auth">唐 · 崔颢《黄鹤楼》</span>
+          <span class="stamp">崔</span>
+        </article>
+        <article class="poem-card reveal">
+          <p class="verse">故人西辞黄鹤楼，烟花三月下扬州。<br>
+            孤帆远影碧空尽，唯见长江天际流。</p>
+          <span class="auth">唐 · 李白《黄鹤楼送孟浩然之广陵》</span>
+          <span class="stamp">李</span>
+        </article>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div>
+        <h4>关于本页</h4>
+        <p>「鹤悠悠」是黄鹤楼的独立数字漫游页：程序化重建楼体与蛇山环境，并配一位 IP 形象鹤小仙；海报与文创按季上新。</p>
+      </div>
+      <div>
+        <h4>快速导航</h4>
+        <div class="foot-links">
+          <a href="roam.html">3D 数字漫游 ↗</a>
+          <a href="#archive">名楼档案</a>
+          <a href="#craft">建筑形制</a>
+          <a href="#posters">海报展廊</a>
+          <a href="#market">文创市集</a>
+          <a href="#poems">千古诗篇</a>
+          <a href="../huanghehou/index.html">四大名楼主页 ↗</a>
+        </div>
+      </div>
+      <div>
+        <h4>素材说明</h4>
+        <p>建筑、场景、IP 立牌均由页面内代码与贴图生成，可离线打开（建议用本地服务器访问）。海报与文创图为占位示意，替换即可上架。</p>
+      </div>
+    </div>
+    <div class="copy">
+      <span>鹤悠悠 · 黄鹤楼数字漫游</span>
+      <span>YELLOW CRANE TOWER © 2026</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* 首屏黄鹤楼已改为实景照片 textures/hhl_photo.jpg，原程序化 SVG 生成代码停用
+(function buildTower(){
+  const svg = document.getElementById('towerSvg');
+  const NS = 'http://www.w3.org/2000/svg';
+  const cx = 230, tiers = [
+    {y:428, w:186, body:150},
+    {y:376, w:162, body:124},
+    {y:326, w:138, body:100},
+    {y:280, w:114, body:80},
+    {y:238, w:92,  body:62}
+  ];
+  function el(tag, attrs){
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  }
+  const g = el('g', {});
+  g.appendChild(el('path', {
+    d: 'M0 500 C 70 474 128 462 196 470 C 250 476 276 486 330 482 C 386 478 420 466 460 474 L460 560 L0 560 Z',
+    fill: '#0a1218', opacity: '.92'
+  }));
+  g.appendChild(el('rect', {x: cx-118, y: 476, width: 236, height: 14, rx: 2, fill: '#0a1218'}));
+  g.appendChild(el('path', {d: 'M'+(cx-118)+' 476 H'+(cx+118), stroke: '#c19a4a', 'stroke-width': '1.2', opacity: '.55', fill: 'none'}));
+
+  const bodyFill = '#0a1218';
+  tiers.forEach((t, i) => {
+    g.appendChild(el('rect', {
+      x: cx - t.body/2, y: t.y, width: t.body, height: 46, fill: bodyFill
+    }));
+    g.appendChild(el('path', {
+      d: 'M'+(cx-t.body/2+8)+' '+(t.y+4)+' V'+(t.y+42)+' M'+(cx+t.body/2-8)+' '+(t.y+4)+' V'+(t.y+42),
+      stroke: '#c19a4a', 'stroke-width': '1', opacity: '.22', fill: 'none'
+    }));
+  });
+
+  tiers.forEach((t, i) => {
+    const w = t.w, y = t.y - 4;
+    const d = 'M'+(cx-w)+' '+y+' C '+(cx-w*0.62)+' '+(y-10)+' '+(cx-w*0.34)+' '+(y-30)+' '+cx+' '+(y-40)+
+              ' C '+(cx+w*0.34)+' '+(y-30)+' '+(cx+w*0.62)+' '+(y-10)+' '+(cx+w)+' '+y+
+              ' L '+(cx+w*0.96)+' '+(y+9)+' L '+(cx-w*0.96)+' '+(y+9)+' Z';
+    g.appendChild(el('path', {
+      d: d, fill: '#111d26', stroke: '#c19a4a', 'stroke-width': '1.6',
+      'stroke-linejoin': 'round', opacity: '.95'
+    }));
+    g.appendChild(el('path', {
+      d: 'M'+(cx-w)+' '+y+' q -10 -2 -14 -11 M'+(cx+w)+' '+y+' q 10 -2 14 -11',
+      stroke: '#e3c479', 'stroke-width': '2', fill: 'none', 'stroke-linecap': 'round'
+    }));
+  });
+
+  g.appendChild(el('path', {
+    d: 'M'+cx+' 196 V 172', stroke: '#e3c479', 'stroke-width': '2.4', 'stroke-linecap': 'round', fill: 'none'
+  }));
+  g.appendChild(el('circle', {cx: cx, cy: 168, r: 7, fill: '#e3c479', opacity: '.9'}));
+  g.appendChild(el('circle', {cx: cx, cy: 168, r: 14, fill: 'none', stroke: '#e3c479', 'stroke-width': '1', opacity: '.35'}));
+
+  for (let i = 0; i < 5; i++) {
+    const t = tiers[i];
+    for (let k = -1; k <= 1; k++) {
+      g.appendChild(el('rect', {
+        x: cx + k*20 - 4, y: t.y + 18, width: 8, height: 12, rx: 1,
+        fill: '#f0d9a0', opacity: String(.5 + i*0.06)
+      }));
+    }
+  }
+
+  const outline = el('path', {
+    d: 'M'+(cx-186)+' 424 C '+(cx-120)+' 414 '+(cx-60)+' 394 '+cx+' 384 ' +
+       'C '+(cx+60)+' 394 '+(cx+120)+' 414 '+(cx+186)+' 424',
+    fill: 'none', stroke: '#e3c479', 'stroke-width': '.8', opacity: '.35',
+    class: 'draw'
+  });
+  svg.appendChild(g);
+  svg.appendChild(outline);
+})();
+*/
+
+/* 首屏流星雨：高亮 · 多数量 · 长轨迹（三层辉光绘制） */
+(function meteorShower(){
+  const canvas = document.getElementById('meteorCanvas');
+  if (!canvas || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const ctx = canvas.getContext('2d');
+  let W = 0, H = 0;
+  function resize(){
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = canvas.clientWidth; H = canvas.clientHeight;
+    canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  resize();
+  addEventListener('resize', resize);
+
+  /* 暖金与月白色系，贴合夜空主题 */
+  const COLORS = ['255,248,224', '255,233,176', '240,217,160', '214,232,255', '255,255,255'];
+  const COUNT = 36;                 /* 同屏流星数量 */
+  const meteors = [];
+
+  function reset(m, first){
+    const big = Math.random() < .26;  /* 26% 概率为大火流星 */
+    m.dx = -(0.50 + Math.random() * .22);         /* 向左 */
+    m.dy = 0.66 + Math.random() * .20;            /* 向下，约 45° 斜坠 */
+    const n = Math.hypot(m.dx, m.dy);
+    m.dx /= n; m.dy /= n;
+    m.len   = big ? 380 + Math.random() * 260 : 220 + Math.random() * 200;
+    m.speed = big ? 11 + Math.random() * 6    : 7 + Math.random() * 8;
+    m.width = big ? 3.8 + Math.random() * 1.6 : 2.2 + Math.random() * 1.4;
+    m.alpha = big ? 1.0 + Math.random() * .35 : .75 + Math.random() * .5;
+    m.color = COLORS[(Math.random() * COLORS.length) | 0];
+    /* 横向铺满整个首屏（含左侧空域） */
+    m.x = -W * .15 + Math.random() * W * 1.3;
+    /* 入场时均匀散布在屏幕上方一带，避免全部堆在远处屏外 */
+    m.y = first ? (Math.random() * H * 1.15 - H * .08)
+                : (-m.len * (0.15 + Math.random() * 0.75) - Math.random() * 40);
+  }
+  for (let i = 0; i < COUNT; i++){ const m = {}; reset(m, true); meteors.push(m); }
+
+  function stroke(x1, y1, x2, y2, w, style){
+    ctx.strokeStyle = style; ctx.lineWidth = w;
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  }
+  /* 锥形尾迹：沿飞行反方向分段，越远越细越淡 */
+  function tail(m, a, from, to, baseW, alphaK){
+    const SEG = 16, span = to - from;
+    for (let s = 0; s < SEG; s++){
+      const p0 = from + span * (s / SEG), p1 = from + span * ((s + 1) / SEG);
+      const k0 = p0 / to;                       /* 0=头部 1=尾端 */
+      const fade = Math.pow(1 - k0, 1.6);       /* 透明衰减 */
+      const w = baseW * (0.12 + 0.88 * Math.pow(1 - k0, 0.85)); /* 由粗到细 */
+      const x0 = m.x - m.dx * m.len * p0, y0 = m.y - m.dy * m.len * p0;
+      const x1 = m.x - m.dx * m.len * p1, y1 = m.y - m.dy * m.len * p1;
+      ctx.strokeStyle = 'rgba(' + m.color + ',' + (a * alphaK * fade).toFixed(3) + ')';
+      ctx.lineWidth = Math.max(0.35, w);
+      ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+    }
+  }
+  (function frame(){
+    ctx.clearRect(0, 0, W, H);
+    ctx.globalCompositeOperation = 'lighter';   /* 叠加发光 */
+    ctx.lineCap = 'butt';
+    for (const m of meteors){
+      m.x += m.dx * m.speed; m.y += m.dy * m.speed;
+      const a = Math.min(m.alpha, 1);
+      /* 一层：头部附近柔光晕（只覆盖前段，尾部不拖粗） */
+      stroke(m.x, m.y, m.x - m.dx * m.len * .3, m.y - m.dy * m.len * .3,
+        m.width * 2.6, 'rgba(' + m.color + ',' + (a * .16).toFixed(3) + ')');
+      /* 二层：主尾迹锥形长光带 */
+      tail(m, a, 0, 1, m.width, 1);
+      /* 三层：白色热芯，只在近头 40% */
+      ctx.strokeStyle = 'rgba(255,255,255,' + (a * .8).toFixed(3) + ')';
+      (function hotCore(){
+        const SEG = 8, to = 0.4;
+        for (let s = 0; s < SEG; s++){
+          const p0 = to * (s / SEG), p1 = to * ((s + 1) / SEG);
+          const k0 = p0 / to, w = m.width * .42 * (0.15 + 0.85 * (1 - k0));
+          ctx.lineWidth = Math.max(0.3, w);
+          ctx.beginPath();
+          ctx.moveTo(m.x - m.dx * m.len * p0, m.y - m.dy * m.len * p0);
+          ctx.lineTo(m.x - m.dx * m.len * p1, m.y - m.dy * m.len * p1);
+          ctx.stroke();
+        }
+      })();
+      /* 头部辉光球 */
+      const r = m.width * 3.4;
+      const hg = ctx.createRadialGradient(m.x, m.y, 0, m.x, m.y, r);
+      hg.addColorStop(0, 'rgba(255,255,255,' + a.toFixed(3) + ')');
+      hg.addColorStop(.35, 'rgba(' + m.color + ',' + (a * .55).toFixed(3) + ')');
+      hg.addColorStop(1, 'rgba(' + m.color + ',0)');
+      ctx.fillStyle = hg;
+      ctx.beginPath(); ctx.arc(m.x, m.y, r, 0, 7); ctx.fill();
+      /* 飞出边界后从上方重新入场 */
+      if (m.y - m.len > H + 80 || m.x + m.len < -100) reset(m, false);
+    }
+    requestAnimationFrame(frame);
+  })();
+})();
+
+/* 章节入场 */
+const io = new IntersectionObserver((entries) => {
+  entries.forEach(en => { if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); } });
+}, { threshold: .12 });
+document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+/* 导航底色 */
+const nav = document.getElementById('nav');
+function onScroll(){
+  nav.classList.toggle('solid', window.scrollY > window.innerHeight * .82);
+}
+onScroll();
+addEventListener('scroll', onScroll, { passive: true });
+</script>
+</body>
+</html>
