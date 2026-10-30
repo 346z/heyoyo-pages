@@ -24,7 +24,7 @@
   .vignette{position:fixed;inset:0;pointer-events:none;z-index:2;
     background:radial-gradient(ellipse at 50% 45%,transparent 42%,rgba(2,6,12,.52) 100%),
                linear-gradient(180deg,rgba(3,8,14,.52) 0%,transparent 18%,transparent 78%,rgba(3,8,14,.55) 100%)}
-  .grain{position:fixed;inset:0;pointer-events:none;z-index:2;opacity:.25;mix-blend-mode:soft-light;
+  .grain{position:fixed;inset:0;pointer-events:none;z-index:2;opacity:.12;mix-blend-mode:soft-light;
     background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E")}
   /* 开场 */
   #intro{position:fixed;inset:0;z-index:100;display:flex;align-items:center;padding:0 7vw;
@@ -200,6 +200,8 @@
     <button class="chip on" id="btn-orbit" title="鼠标拖拽旋转、滚轮缩放">环绕查看</button>
     <button class="chip" id="btn-walk" title="WASD 移动、鼠标转视角">沉浸漫游</button>
     <button class="chip" id="btn-overview" title="俯瞰全景">俯瞰全景</button>
+    <button class="chip" id="btn-explode" title="楼体分解：逐层拉开，查看楼内文创与字画">分解楼体</button>
+    <button class="chip" id="btn-interior" title="走进楼内，逐层近观字画与陈列（Esc 退出）">入楼观展</button>
     <span class="sep"></span>
     <button class="chip ghost" id="btn-daynight" title="切换昼夜">昼 / 夜</button>
     <button class="chip ghost" id="btn-shot" title="保存截图">截图</button>
@@ -224,7 +226,7 @@
   <div class="poem" id="ip-poem"></div>
 </aside>
 
-<div id="hints"><b>操作</b><kbd>拖拽</kbd> 旋转 · <kbd>滚轮</kbd> 缩放 · 点击楼体了解详情 · <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 漫游</div>
+<div id="hints"><b>操作</b><kbd>拖拽</kbd> 旋转 · <kbd>滚轮</kbd> 缩放 · 点击楼体了解详情 · 「分解楼体」查看各层文创字画 · <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 漫游</div>
 
 <div id="viewDock">
   <span class="dock-label">视角</span>
@@ -374,8 +376,12 @@ function texGround(){
 
 /* ---------- 真实照片纹理加载（从 textures 目录，失败则回退程序化纹理） ---------- */
 const TEX={}; // 缓存真实纹理
+// 素材开关：当前目录未附带 textures/ 图片，关闭以免浏览器反复报 404；
+// 若已把 textures 目录放到 HTML 同目录，将其改为 true 即可启用真实照片纹理。
+const USE_REAL_TEXTURES=false;
 const texLoader=new THREE.TextureLoader();
 function loadRealTex(name,fallback){
+  if(!USE_REAL_TEXTURES)return null;
   // 优先加载真实纹理，加载失败用fallback
   const t=texLoader.load(
     'textures/'+name+'.jpg',
@@ -626,31 +632,31 @@ function makeFloor(opts){
     // 前后墙（完整一面墙）
     for(const side of [-1,1]){
       const wall=new THREE.Mesh(new THREE.BoxGeometry(w,wallHh,0.3),matWall);
-      wall.position.set(0,wallHh/2,side*d/2);wall.castShadow=true;wall.receiveShadow=true;grp.add(wall);
+      wall.position.set(0,wallHh/2,side*d/2);wall.castShadow=true;wall.receiveShadow=true;wall.userData.facade=true;grp.add(wall);
       // 门（贴在墙面）
       const door=new THREE.Mesh(new THREE.BoxGeometry(2.2,wallHh*0.8,0.12),matRed);
-      door.position.set(0,wallHh*0.4,side*(d/2+0.16));grp.add(door);
+      door.position.set(0,wallHh*0.4,side*(d/2+0.16));door.userData.facade=true;grp.add(door);
       // 门钉
       for(let r=0;r<3;r++)for(let c=0;c<3;c++){
         const stud=new THREE.Mesh(new THREE.SphereGeometry(0.06,8,8),
           new THREE.MeshStandardMaterial({color:'#d4a017',metalness:0.7,roughness:0.3}));
         stud.position.set(-0.6+c*0.6, wallHh*0.2+r*(wallHh*0.28), side*(d/2+0.22));
-        grp.add(stud);
+        stud.userData.facade=true;grp.add(stud);
       }
     }
     // 左右墙（完整一面墙）
     for(const side of [-1,1]){
       const wall=new THREE.Mesh(new THREE.BoxGeometry(0.3,wallHh,d),matWall);
-      wall.position.set(side*w/2,wallHh/2,0);wall.castShadow=true;wall.receiveShadow=true;grp.add(wall);
+      wall.position.set(side*w/2,wallHh/2,0);wall.castShadow=true;wall.receiveShadow=true;wall.userData.facade=true;grp.add(wall);
       // 花格窗（贴在墙面）
       const win=new THREE.Mesh(new THREE.BoxGeometry(0.12,wallHh*0.6,1.8),
         new THREE.MeshStandardMaterial({color:'#3a2a1a',roughness:0.7}));
-      win.position.set(side*(w/2+0.16),wallHh*0.5,0);grp.add(win);
+      win.position.set(side*(w/2+0.16),wallHh*0.5,0);win.userData.facade=true;grp.add(win);
       // 窗格
       for(let i=-1;i<=1;i++){
         const bar=new THREE.Mesh(new THREE.BoxGeometry(0.14,wallHh*0.5,0.05),
           new THREE.MeshStandardMaterial({color:'#5a3a1a',roughness:0.7}));
-        bar.position.set(side*(w/2+0.18),wallHh*0.5,i*0.55);grp.add(bar);
+        bar.position.set(side*(w/2+0.18),wallHh*0.5,i*0.55);bar.userData.facade=true;grp.add(bar);
       }
     }
   }
@@ -790,7 +796,515 @@ function makeFloor(opts){
   return grp;
 }
 
-/* ---------------------------- 3. 四大名楼构建 ---------------------------- */
+/* ---------------------- 2.6 楼内陈列：文创与字画（程序化生成） ---------------------- */
+// 绫裱水墨挂轴：竖排文字 + 可选山水 + 朱印
+function texInkScroll(cols,seal,paint){
+  const W=320,H=660,c=makeCanvas(W,H),x=c.getContext('2d');
+  // 绫绢天地
+  const mount=x.createLinearGradient(0,0,W,H);
+  mount.addColorStop(0,'#5a3527');mount.addColorStop(.5,'#4a2a1f');mount.addColorStop(1,'#331c15');
+  x.fillStyle=mount;x.fillRect(0,0,W,H);
+  // 画心纸
+  x.fillStyle='#f2e8d2';x.fillRect(20,26,W-40,H-52);
+  for(let i=0;i<240;i++){
+    x.strokeStyle=`rgba(${120+Math.random()*40},${100+Math.random()*40},${70+Math.random()*30},.13)`;
+    const px=24+Math.random()*(W-48),py=32+Math.random()*(H-64);
+    x.beginPath();x.moveTo(px,py);x.lineTo(px+Math.random()*20-10,py+Math.random()*4-2);x.stroke();
+  }
+  x.strokeStyle='rgba(120,92,52,.5)';x.lineWidth=2;x.strokeRect(28,36,W-56,H-72);
+  // 山水（淡墨远山 + 江面留白）
+  if(paint){
+    const mg=x.createLinearGradient(0,120,0,420);
+    mg.addColorStop(0,'rgba(52,64,76,.55)');mg.addColorStop(1,'rgba(52,64,76,0)');
+    x.fillStyle=mg;
+    x.beginPath();x.moveTo(34,420);
+    for(let i=0;i<=12;i++){
+      const px=34+i*21, py=372-Math.abs(Math.sin(i*1.15))*82-Math.random()*10;
+      x.lineTo(px,py);
+    }
+    x.lineTo(W-34,420);x.closePath();x.fill();
+    x.strokeStyle='rgba(40,52,62,.55)';x.lineWidth=3;
+    x.beginPath();x.moveTo(50,330);x.bezierCurveTo(110,300,150,342,200,318);x.stroke();
+    // 小舟
+    x.fillStyle='rgba(40,52,62,.7)';
+    x.beginPath();x.moveTo(96,372);x.lineTo(124,372);x.lineTo(118,380);x.lineTo(102,380);x.closePath();x.fill();
+  }
+  // 竖排文字（右起）；画作题款置于上部，诗轴则自上方起笔
+  const fs=paint?34:Math.min(62,Math.floor((W-100)/Math.max(1,cols.length))*0.86);
+  const step=fs*1.12, top=paint?78:84, x0=W-62, colStep=(W-120)/Math.max(1,cols.length);
+  x.font=`${fs}px "STKaiti","KaiTi","Microsoft YaHei",serif`;
+  x.textAlign='center';x.textBaseline='middle';x.fillStyle='#241a11';
+  cols.forEach((col,j)=>{
+    const cx=x0-j*colStep;
+    Array.from(col).forEach((ch,k)=>x.fillText(ch,cx,top+k*step));
+  });
+  // 朱印
+  const sx=paint?34:30, sy=H-150;
+  x.fillStyle='#9e2b22';x.fillRect(sx,sy,54,54);
+  x.strokeStyle='#f3e6d0';x.lineWidth=2;x.strokeRect(sx+4,sy+4,46,46);
+  x.font='bold 20px "STKaiti","KaiTi",serif';x.fillStyle='#f6ead6';
+  const s=(seal||'名楼').slice(0,2);
+  x.fillText(s[0],sx+27,sy+20);
+  if(s[1])x.fillText(s[1],sx+27,sy+42);
+  const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t;
+}
+
+// 明信片 / 邮票画面
+function texPostcard(text){
+  const W=300,H=196,c=makeCanvas(W,H),x=c.getContext('2d');
+  const g=x.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#f9cf92');g.addColorStop(.45,'#eda460');g.addColorStop(.75,'#cf7a4e');g.addColorStop(1,'#9d4a37');
+  x.fillStyle=g;x.fillRect(0,0,W,H);
+  // 江面
+  x.fillStyle='rgba(80,56,48,.28)';x.fillRect(0,132,W,H-132);
+  for(let i=0;i<9;i++){
+    x.fillStyle='rgba(255,236,200,.35)';x.fillRect(18+i*30,150+i%3*12,20,2);
+  }
+  // 楼影
+  x.fillStyle='#3a2318';
+  const bx=W/2, by=136;
+  const tw=[86,68,54,40,28];
+  let y=by;
+  tw.forEach((w,i)=>{
+    const h=18;
+    x.fillRect(bx-w/2,y-h,w,h);
+    x.beginPath();x.moveTo(bx-w/2-12,y-h);x.lineTo(bx, y-h-16);x.lineTo(bx+w/2+12,y-h);x.closePath();x.fill();
+    y-=h+4;
+  });
+  x.beginPath();x.moveTo(bx-4,y);x.lineTo(bx, y-14);x.lineTo(bx+4,y);x.closePath();x.fill();
+  // 题字
+  x.font='bold 30px "KaiTi","STKaiti",serif';x.textAlign='center';
+  x.fillStyle='#3b2113';x.fillText(text||'黄鹤楼',W/2,H-20);
+  x.strokeStyle='rgba(255,252,244,.92)';x.lineWidth=10;x.strokeRect(0,0,W,H);
+  const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t;
+}
+
+// 扇面纸本（淡墨折枝 + 朱印）
+function texFanPaper(){
+  const S=256,c=makeCanvas(S,S),x=c.getContext('2d');
+  x.fillStyle='#f6efdd';x.fillRect(0,0,S,S);
+  for(let i=0;i<200;i++){
+    x.strokeStyle=`rgba(150,130,100,${.05+Math.random()*.08})`;
+    const px=Math.random()*S,py=Math.random()*S;
+    x.beginPath();x.moveTo(px,py);x.lineTo(px+Math.random()*12-6,py+Math.random()*3);x.stroke();
+  }
+  // 折枝
+  x.strokeStyle='rgba(50,40,30,.72)';x.lineWidth=3;
+  x.beginPath();x.moveTo(40,210);x.bezierCurveTo(90,170,130,150,186,96);x.stroke();
+  x.lineWidth=2;
+  x.beginPath();x.moveTo(128,140);x.lineTo(112,104);x.stroke();
+  x.beginPath();x.moveTo(156,118);x.lineTo(174,88);x.stroke();
+  x.fillStyle='rgba(166,58,44,.6)';
+  for(const [px,py,r] of [[112,104,9],[174,88,8],[186,96,6],[92,166,7]]){
+    x.beginPath();x.arc(px,py,r,0,7);x.fill();
+  }
+  x.fillStyle='#9e2b22';x.fillRect(196,196,34,34);
+  x.strokeStyle='#f6ead6';x.lineWidth=1.5;x.strokeRect(199,199,28,28);
+  x.font='bold 13px "STKaiti",serif';x.fillStyle='#f6ead6';x.textAlign='center';
+  x.fillText('鹤',213,213);x.fillText('印',213,225);
+  const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t;
+}
+
+// 地毯纹样：团花 + 回纹边（可平铺）
+function texRug(base){
+  const S=256,c=makeCanvas(S,S),x=c.getContext('2d');
+  x.fillStyle=base;x.fillRect(0,0,S,S);
+  for(let i=0;i<S;i+=3){x.fillStyle='rgba(0,0,0,.05)';x.fillRect(0,i,S,1);}
+  x.strokeStyle='rgba(226,196,128,.8)';x.lineWidth=7;x.strokeRect(11,11,S-22,S-22);
+  x.strokeStyle='rgba(226,196,128,.5)';x.lineWidth=2;x.strokeRect(24,24,S-48,S-48);
+  const cx=S/2;
+  x.strokeStyle='rgba(232,206,140,.85)';x.lineWidth=3;
+  [38,52,66].forEach(r=>{x.beginPath();x.arc(cx,cx,r,0,7);x.stroke();});
+  x.fillStyle='rgba(232,206,140,.6)';
+  for(let k=0;k<8;k++){
+    const a=k*Math.PI/4;
+    x.beginPath();x.arc(cx+Math.cos(a)*66,cx+Math.sin(a)*66,5,0,7);x.fill();
+  }
+  x.fillStyle='rgba(232,206,140,.5)';
+  [[28,28],[S-52,28],[28,S-52],[S-52,S-52]].forEach(([px,py])=>{
+    x.fillRect(px,py,16,4);x.fillRect(px,py,4,16);
+  });
+  const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;
+  t.wrapS=t.wrapT=THREE.RepeatWrapping;
+  return t;
+}
+
+// 楹联竖牌：深木底 + 描金联句
+function texCouplet(col){
+  const W=128,H=560,c=makeCanvas(W,H),x=c.getContext('2d');
+  x.fillStyle='#120d07';x.fillRect(0,0,W,H);
+  const g=x.createLinearGradient(0,0,W,0);
+  g.addColorStop(0,'#241708');g.addColorStop(.45,'#5a3a1c');g.addColorStop(1,'#241708');
+  x.fillStyle=g;x.fillRect(7,7,W-14,H-14);
+  for(let i=0;i<120;i++){
+    x.fillStyle=`rgba(0,0,0,${.05+Math.random()*.1})`;
+    x.fillRect(Math.random()*W,Math.random()*H,2,7);
+  }
+  x.strokeStyle='#c9a227';x.lineWidth=4;x.strokeRect(12,12,W-24,H-24);
+  x.font='bold 54px "STKaiti","KaiTi","Microsoft YaHei",serif';
+  x.textAlign='center';x.textBaseline='middle';
+  const n=Math.max(1,col.length), step=(H-70)/(n+1);
+  x.shadowColor='rgba(232,196,64,.7)';x.shadowBlur=9;
+  for(let i=0;i<col.length;i++){
+    const gg=x.createLinearGradient(0,step*(i+1)-27,0,step*(i+1)+27);
+    gg.addColorStop(0,'#fff2c0');gg.addColorStop(.5,'#e8c24a');gg.addColorStop(1,'#b8860b');
+    x.fillStyle=gg;x.fillText(col[i],W/2,35+step*(i+1));
+  }
+  x.shadowBlur=0;
+  const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t;
+}
+
+// 厅名匾额：黑底描金，右起横读
+function texHallPlaque(text){
+  const W=512,H=160,c=makeCanvas(W,H),x=c.getContext('2d');
+  x.fillStyle='#0d0b07';x.fillRect(0,0,W,H);
+  const g=x.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#3b2f18');g.addColorStop(.5,'#151009');g.addColorStop(1,'#0a0806');
+  x.fillStyle=g;x.fillRect(8,8,W-16,H-16);
+  x.strokeStyle='#c9a227';x.lineWidth=7;x.strokeRect(13,13,W-26,H-26);
+  x.strokeStyle='#8b6914';x.lineWidth=2;x.strokeRect(24,24,W-48,H-48);
+  // 古法匾额：首字居右，自右向左读
+  const chars=Array.from(text);
+  const n=Math.max(1,chars.length), step=(W-190)/Math.max(1,n-1);
+  x.font='bold 70px "STKaiti","KaiTi","Microsoft YaHei",serif';
+  x.textAlign='center';x.textBaseline='middle';
+  x.shadowColor='rgba(232,200,64,.75)';x.shadowBlur=13;
+  const gg=x.createLinearGradient(0,40,0,120);
+  gg.addColorStop(0,'#fff6cc');gg.addColorStop(.45,'#ecc94c');gg.addColorStop(1,'#b8860b');
+  x.fillStyle=gg;
+  chars.forEach((ch,i)=>x.fillText(ch,W-95-i*step,H/2+4));
+  x.shadowBlur=0;
+  const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t;
+}
+
+// 展案
+function mkTable(w=2.0,d=0.95,h=0.82){
+  const g=new THREE.Group();
+  const mat=new THREE.MeshStandardMaterial({color:'#5a3018',roughness:.6,map:getWoodTex()});
+  const top=new THREE.Mesh(new THREE.BoxGeometry(w,0.1,d),mat);top.position.y=h;top.castShadow=true;g.add(top);
+  for(const sx of [-1,1])for(const sz of [-1,1]){
+    const leg=new THREE.Mesh(new THREE.BoxGeometry(0.12,h,0.12),mat);
+    leg.position.set(sx*(w/2-0.14),h/2,sz*(d/2-0.14));g.add(leg);
+  }
+  return g;
+}
+
+// 挂轴（含上下木轴）
+function mkScroll(cols,seal,paint,scale){
+  const g=new THREE.Group();
+  const w=2.0*scale,h=3.3*scale;
+  const tx=texInkScroll(cols,seal,paint);
+  const paper=new THREE.Mesh(new THREE.PlaneGeometry(w,h),
+    new THREE.MeshStandardMaterial({map:tx,emissiveMap:tx,emissive:'#ffffff',emissiveIntensity:.42,
+      roughness:.9,side:THREE.DoubleSide}));
+  g.add(paper);
+  const rodMat=new THREE.MeshStandardMaterial({color:'#3a2114',roughness:.6});
+  for(const yy of [h/2,-h/2]){
+    const rod=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.06,w+0.24,10),rodMat);
+    rod.rotation.z=Math.PI/2;rod.position.y=yy;g.add(rod);
+  }
+  return g;
+}
+
+// 楹联竖牌（木框 + 描金联句）
+function mkCouplet(col,scale){
+  const g=new THREE.Group();
+  const w=0.62*scale,h=2.55*scale,th=0.09;
+  const frame=new THREE.Mesh(new THREE.BoxGeometry(w+0.12,h+0.12,th),
+    new THREE.MeshStandardMaterial({color:'#3a2414',roughness:.6,map:getWoodTex()}));
+  g.add(frame);
+  const tx=texCouplet(col);
+  const face=new THREE.Mesh(new THREE.PlaneGeometry(w,h),
+    new THREE.MeshStandardMaterial({map:tx,emissiveMap:tx,emissive:'#ffffff',emissiveIntensity:.34,roughness:.8}));
+  face.position.z=th/2+0.003;g.add(face);
+  return g;
+}
+
+// 厅名匾额（金框 + 黑底金字）
+function mkHallPlaque(text,w,h){
+  const g=new THREE.Group();
+  const frame=new THREE.Mesh(new THREE.BoxGeometry(w+0.16,h+0.16,0.13),
+    new THREE.MeshStandardMaterial({color:'#c9a227',metalness:.65,roughness:.32,emissive:'#2e2008',emissiveIntensity:.25}));
+  g.add(frame);
+  const tx=texHallPlaque(text);
+  const face=new THREE.Mesh(new THREE.PlaneGeometry(w,h),
+    new THREE.MeshStandardMaterial({map:tx,emissiveMap:tx,emissive:'#ffffff',emissiveIntensity:.4,roughness:.6}));
+  face.position.z=0.071;g.add(face);
+  return g;
+}
+
+// 文创展品
+function mkExhibit(type,name){
+  const g=new THREE.Group();
+  const goldMat=new THREE.MeshStandardMaterial({color:'#dcb463',metalness:.55,roughness:.32,emissive:'#3a2a08',emissiveIntensity:.18});
+  const celadon=new THREE.MeshStandardMaterial({color:'#8fb6a6',roughness:.35,metalness:.08});
+  const darkWood=new THREE.MeshStandardMaterial({color:'#4a2c14',roughness:.65,map:getWoodTex()});
+  if(type==='tower'){
+    // 微缩黄鹤楼
+    const base=new THREE.Mesh(new THREE.BoxGeometry(1.6,0.2,1.6),
+      new THREE.MeshStandardMaterial({color:'#efe8da',roughness:.85}));
+    g.add(base);
+    const bodyMat=new THREE.MeshStandardMaterial({color:'#a8452f',roughness:.7});
+    const ws=[1.25,1.0,0.78,0.56];
+    let y=0.2;
+    ws.forEach((w,i)=>{
+      const h=0.34;
+      const body=new THREE.Mesh(new THREE.BoxGeometry(w,h,w),bodyMat);
+      body.position.y=y+h/2;g.add(body);
+      const roof=makeRoof({width:w+0.2,depth:w+0.2,height:0.2,eaveLen:0.18,upturn:0.1,curve:1.2,
+        capW:i===ws.length-1?w*0.38:ws[i+1]+0.2,capD:i===ws.length-1?w*0.38:ws[i+1]+0.2,pavilion:'huanghe'});
+      roof.position.y=y+h+0.05;g.add(roof);
+      y+=h+0.24;
+    });
+    const ball=new THREE.Mesh(new THREE.SphereGeometry(0.08,10,8),goldMat);
+    ball.position.y=y+0.06;g.add(ball);
+    g.scale.setScalar(0.62);
+  }else if(type==='fan'){
+    // 折扇：扇面 + 扇骨 + 扇座
+    const fan=new THREE.Mesh(new THREE.CircleGeometry(1.0,26,0,Math.PI),
+      new THREE.MeshStandardMaterial({map:texFanPaper(),roughness:.9,side:THREE.DoubleSide}));
+    fan.position.y=0.55;g.add(fan);
+    const ribMat=new THREE.MeshStandardMaterial({color:'#7a4a24',roughness:.6});
+    for(let i=0;i<=8;i++){
+      const a=i/8*Math.PI;
+      const rib=new THREE.Mesh(new THREE.BoxGeometry(0.035,1.0,0.04),ribMat);
+      rib.position.set(Math.cos(a)*0.5,0.55+Math.sin(a)*0.5,0.015);
+      rib.rotation.z=a-Math.PI/2;g.add(rib);
+    }
+    const stand=new THREE.Mesh(new THREE.BoxGeometry(0.72,0.12,0.34),darkWood);
+    stand.position.y=0.06;g.add(stand);
+    const foot=new THREE.Mesh(new THREE.BoxGeometry(0.16,0.46,0.16),darkWood);
+    foot.position.y=0.28;g.add(foot);
+    g.scale.setScalar(0.82);
+  }else if(type==='tea'){
+    // 茶器（壶 + 双盏）
+    const pot=new THREE.Mesh(new THREE.SphereGeometry(0.3,16,12),celadon);
+    pot.scale.set(1,0.78,1);pot.position.y=0.34;g.add(pot);
+    const spout=new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.075,0.34,8),celadon);
+    spout.position.set(0.3,0.4,0);spout.rotation.z=-0.85;g.add(spout);
+    const handle=new THREE.Mesh(new THREE.TorusGeometry(0.14,0.032,8,16,Math.PI*1.3),celadon);
+    handle.position.set(-0.28,0.38,0);handle.rotation.y=Math.PI/2;g.add(handle);
+    const lid=new THREE.Mesh(new THREE.SphereGeometry(0.13,12,10),celadon);
+    lid.scale.y=0.6;lid.position.y=0.54;g.add(lid);
+    const knob=new THREE.Mesh(new THREE.SphereGeometry(0.045,8,8),goldMat);
+    knob.position.y=0.6;g.add(knob);
+    for(const sx of [-1,1]){
+      const cup=new THREE.Mesh(new THREE.CylinderGeometry(0.1,0.075,0.14,12),celadon);
+      cup.position.set(sx*0.34,0.09,0.24);g.add(cup);
+      const tray=new THREE.Mesh(new THREE.CylinderGeometry(0.15,0.15,0.025,14),darkWood);
+      tray.position.set(sx*0.34,0.012,0.24);g.add(tray);
+    }
+    const tray=new THREE.Mesh(new THREE.BoxGeometry(1.15,0.05,0.62),darkWood);
+    tray.position.y=0.02;g.add(tray);
+  }else if(type==='books'){
+    // 线装书 / 图册
+    const cols=[0x8d2b24,0x1a4a6b,0x3a5a2a];
+    let y=0.05;
+    cols.forEach((cc,i)=>{
+      const b=new THREE.Mesh(new THREE.BoxGeometry(0.62,0.08,0.86),
+        new THREE.MeshStandardMaterial({color:cc,roughness:.7}));
+      b.position.set(i*0.03,y,0);b.rotation.y=i*0.06;g.add(b);
+      y+=0.085;
+    });
+    const cover=new THREE.Mesh(new THREE.PlaneGeometry(0.66,0.9),
+      new THREE.MeshStandardMaterial({color:'#d8c9a4',roughness:.9}));
+    cover.rotation.x=-Math.PI/2;cover.rotation.z=0.12;cover.position.set(0.02,y+0.004,0);g.add(cover);
+    g.scale.setScalar(0.9);
+  }else if(type==='postcard'){
+    // 明信片架 + 两张卡片
+    const tex=texPostcard('黄鹤楼');
+    for(const [i,rot] of [[0,-0.16],[1,0.12]]){
+      const card=new THREE.Mesh(new THREE.PlaneGeometry(0.78,0.5),
+        new THREE.MeshStandardMaterial({map:tex,roughness:.85,side:THREE.DoubleSide}));
+      card.position.set(-0.2+i*0.42,0.28+i*0.02,0);card.rotation.y=rot;card.rotation.x=-0.1;g.add(card);
+    }
+    const stand=new THREE.Mesh(new THREE.BoxGeometry(1.0,0.08,0.3),darkWood);
+    stand.position.y=0.04;g.add(stand);
+    const bar=new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.03,0.9,8),darkWood);
+    bar.rotation.z=Math.PI/2;bar.position.set(0,0.13,0.16);g.add(bar);
+  }else if(type==='crane'){
+    // 铜鹤摆件
+    const body=new THREE.Mesh(new THREE.SphereGeometry(0.3,14,12),goldMat);
+    body.scale.set(1,0.72,1.45);body.position.y=0.42;g.add(body);
+    const neck=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.085,0.7,8),goldMat);
+    neck.position.set(0,0.8,0.24);neck.rotation.x=0.36;g.add(neck);
+    const head=new THREE.Mesh(new THREE.SphereGeometry(0.11,10,8),goldMat);
+    head.position.set(0,1.13,0.38);g.add(head);
+    const beak=new THREE.Mesh(new THREE.ConeGeometry(0.04,0.24,6),goldMat);
+    beak.position.set(0,1.12,0.5);beak.rotation.x=Math.PI/2;g.add(beak);
+    for(const wx of [-1,1]){
+      const wing=new THREE.Mesh(new THREE.SphereGeometry(0.2,10,8),goldMat);
+      wing.scale.set(0.3,0.55,0.95);wing.position.set(wx*0.2,0.46,-0.04);wing.rotation.z=wx*0.2;g.add(wing);
+    }
+    for(const lx of [-0.1,0.1]){
+      const leg=new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.035,0.24,6),goldMat);
+      leg.position.set(lx,0.12,0.02);g.add(leg);
+    }
+    const base=new THREE.Mesh(new THREE.CylinderGeometry(0.34,0.38,0.08,18),darkWood);
+    base.position.y=0.04;g.add(base);
+  }else if(type==='incense'){
+    // 香炉（博山炉式）
+    const body=new THREE.Mesh(new THREE.CylinderGeometry(0.26,0.3,0.34,16),goldMat);
+    body.position.y=0.26;g.add(body);
+    const lid=new THREE.Mesh(new THREE.SphereGeometry(0.24,14,10),goldMat);
+    lid.scale.y=0.45;lid.position.y=0.46;g.add(lid);
+    const finial=new THREE.Mesh(new THREE.ConeGeometry(0.07,0.16,8),goldMat);
+    finial.position.y=0.63;g.add(finial);
+    for(let i=0;i<3;i++){
+      const leg=new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.05,0.14,6),goldMat);
+      const a=i*Math.PI*2/3;
+      leg.position.set(Math.cos(a)*0.2,0.07,Math.sin(a)*0.2);g.add(leg);
+    }
+    g.scale.setScalar(0.95);
+  }
+  g.traverse(o=>{if(o.isMesh){o.castShadow=true;o.userData.exhibit=name;}});
+  return g;
+}
+
+// 各层内部展厅：楼板、地毯、藻井、吊灯、挂轴、展案与文创
+const FLOOR_THEMES=[
+  {floor:'一楼',hall:'白云黄鹤厅',rug:'#7a2320',
+   ink:['昔人已乘黄鹤去','此地空余黄鹤楼'],seal:'崔颢',paint:false,
+   side:['黄鹤一去不复返','白云千载空悠悠'],
+   items:[{type:'tower',name:'微缩黄鹤楼 · 文创摆件'},{type:'fan',name:'鹤纹折扇 · 文创'}]},
+  {floor:'二楼',hall:'翰墨楹联厅',rug:'#3a4a6b',
+   ink:['晴川历历汉阳树','芳草萋萋鹦鹉洲'],seal:'崔颢',paint:true,
+   side:['日暮乡关何处是','烟波江上使人愁'],
+   items:[{type:'books',name:'《黄鹤楼诗集》线装书'},{type:'tea',name:'青瓷茶器 · 文创'}]},
+  {floor:'三楼',hall:'文人雅集厅',rug:'#4a5a3a',
+   ink:['故人西辞黄鹤楼','烟花三月下扬州'],seal:'李白',paint:true,
+   side:['孤帆远影碧空尽','唯见长江天际流'],
+   items:[{type:'tea',name:'江城茶席 · 文创'},{type:'fan',name:'折枝扇面 · 文创'}]},
+  {floor:'四楼',hall:'江天一览厅',rug:'#6b4a22',
+   ink:['天下江山第一楼','极目楚天舒'],seal:'名楼',paint:false,
+   side:['一桥飞架南北','天堑变通途'],
+   items:[{type:'postcard',name:'黄鹤楼明信片 · 文创'},{type:'books',name:'《名楼图志》'}]},
+  {floor:'五楼',hall:'鹤舞九天厅',rug:'#5a2a3a',
+   ink:['黄鹤归来兮','江山入画图'],seal:'鹤归',paint:true,
+   side:['昔人已乘黄鹤去','白云千载空悠悠'],
+   items:[{type:'crane',name:'铜鹤摆件 · 文创'},{type:'incense',name:'博山香炉 · 文创'}]}
+];
+
+function buildInterior(w,d,wallH,theme){
+  const g=new THREE.Group();
+  const y0=0.18;
+  const woodTex=getWoodTex();
+  const wood=new THREE.MeshStandardMaterial({color:'#6b4526',roughness:.8,map:woodTex});
+  // 楼板
+  const deck=new THREE.Mesh(new THREE.BoxGeometry(w-1.4,0.14,d-1.4),wood);
+  deck.position.y=y0+0.07;deck.receiveShadow=true;g.add(deck);
+  // 地毯（团花回纹织样，随厅宽平铺）
+  const rw=Math.max(2,w-4), rd=Math.max(2,d-4);
+  const rugTex=texRug(theme.rug);
+  rugTex.repeat.set(Math.max(1,Math.round(rw/6.5)),Math.max(1,Math.round(rd/6.5)));
+  const rug=new THREE.Mesh(new THREE.BoxGeometry(rw,0.03,rd),
+    new THREE.MeshStandardMaterial({map:rugTex,roughness:.95}));
+  rug.position.y=y0+0.155;g.add(rug);
+  // 天花 + 内圈梁
+  const ceil=new THREE.Mesh(new THREE.BoxGeometry(w-1.3,0.16,d-1.3),
+    new THREE.MeshStandardMaterial({color:'#4a2c14',roughness:.8,map:woodTex}));
+  ceil.position.y=wallH-0.42;g.add(ceil);
+  for(const sz of [-1,1]){
+    const beam=new THREE.Mesh(new THREE.BoxGeometry(w-1.6,0.26,0.26),wood);
+    beam.position.set(0,wallH-0.68,sz*(d/2-1.0));g.add(beam);
+  }
+  // 藻井：同心描金木圈 + 中心莲座（中式厅堂顶心装饰）
+  const goldTrim=new THREE.MeshStandardMaterial({color:'#c9a227',metalness:.6,roughness:.35,emissive:'#2e2008',emissiveIntensity:.3});
+  const aR=Math.min(w,d)*0.30, ceilY=wallH-0.42;
+  [1,0.72,0.45].forEach((f,k)=>{
+    const ring=new THREE.Mesh(new THREE.TorusGeometry(aR*f,0.07,6,34),goldTrim);
+    ring.rotation.x=Math.PI/2;ring.position.set(0,ceilY-0.1-k*0.05,0);g.add(ring);
+  });
+  const lotus=new THREE.Mesh(new THREE.TorusGeometry(aR*0.28,0.09,6,24),goldTrim);
+  lotus.rotation.x=Math.PI/2;lotus.position.y=ceilY-0.14;g.add(lotus);
+  // 吊灯：六角宫灯（贴顶悬挂，避免挡住后壁匾额与挂轴）
+  const lampMat=new THREE.MeshStandardMaterial({color:'#ffd9a0',emissive:'#ffb45c',emissiveIntensity:1.7,roughness:.5});
+  const lampR=Math.min(w,d)*0.032, lampH=lampR*1.55;
+  const lampY=ceilY-lampH*0.74-0.16;
+  const lampG=new THREE.Group();
+  const bodyL=new THREE.Mesh(new THREE.CylinderGeometry(lampR,lampR,lampH,8),lampMat);lampG.add(bodyL);
+  const capT=new THREE.Mesh(new THREE.CylinderGeometry(lampR*0.42,lampR,lampH*0.24,8),wood);
+  capT.position.y=lampH*0.5+lampH*0.12;lampG.add(capT);
+  const capB=new THREE.Mesh(new THREE.CylinderGeometry(lampR,lampR*0.42,lampH*0.24,8),wood);
+  capB.position.y=-lampH*0.5-lampH*0.12;lampG.add(capB);
+  const tassel=new THREE.Mesh(new THREE.SphereGeometry(lampR*0.2,10,8),
+    new THREE.MeshStandardMaterial({color:'#b8342a',roughness:.7}));
+  tassel.position.y=-lampH*0.5-lampH*0.17;lampG.add(tassel);
+  // 宫灯上下金边
+  [1,-1].forEach(s=>{
+    const ring=new THREE.Mesh(new THREE.TorusGeometry(lampR*1.02,0.04,6,18),wood);
+    ring.rotation.x=Math.PI/2;ring.position.y=s*(lampH*0.5+lampH*0.02);lampG.add(ring);
+  });
+  lampG.position.set(0,lampY,0);g.add(lampG);
+  const cordTop=lampY+lampH*0.5+lampH*0.24, cordLen=Math.max(0.12,(wallH-0.42)-cordTop);
+  const cord=new THREE.Mesh(new THREE.CylinderGeometry(0.035,0.035,cordLen,6),
+    new THREE.MeshStandardMaterial({color:'#3a2114',roughness:.6}));
+  cord.position.set(0,cordTop+cordLen*0.5,0);g.add(cord);
+  // 四角落地灯
+  [[1,1],[1,-1],[-1,1],[-1,-1]].forEach(([sx,sz])=>{
+    const c=new THREE.Group();
+    const stand=new THREE.Mesh(new THREE.CylinderGeometry(0.12,0.18,0.1,8),wood);stand.position.y=0.05;c.add(stand);
+    const pole=new THREE.Mesh(new THREE.CylinderGeometry(0.045,0.06,1.1,6),wood);pole.position.y=0.62;c.add(pole);
+    const shade=new THREE.Mesh(new THREE.SphereGeometry(0.42,12,10),lampMat);
+    shade.scale.set(1,1.2,1);shade.position.y=1.38;c.add(shade);
+    [1.72,1.04].forEach(ry=>{
+      const ring=new THREE.Mesh(new THREE.TorusGeometry(0.36,0.045,6,16),wood);
+      ring.rotation.x=Math.PI/2;ring.position.y=ry;c.add(ring);
+    });
+    const tas=new THREE.Mesh(new THREE.ConeGeometry(0.1,0.34,8),
+      new THREE.MeshStandardMaterial({color:'#b8342a',roughness:.7}));
+    tas.position.y=0.88;c.add(tas);
+    c.position.set(sx*(w*0.36),y0,sz*(d*0.31));g.add(c);
+  });
+  // ---- 后壁：厅名匾额 + 主挂轴 + 一对楹联 ----
+  const ph=Math.min(0.9,wallH*0.2), pw=ph*3.3;
+  const plaqueY=ceilY-0.16-ph/2;
+  const plaque=mkHallPlaque(theme.hall,pw,ph);
+  plaque.position.set(0,plaqueY,-d/2+0.62);g.add(plaque);
+  plaque.traverse(o=>{if(o.isMesh)o.userData.art=`${theme.floor} · ${theme.hall}`;});
+
+  const sTop=plaqueY-ph/2-0.14, sBot=y0+0.62;
+  const scrollH=Math.max(1.2,Math.min(2.45,sTop-sBot));
+  const scale=scrollH/3.3;
+  const scroll=mkScroll(theme.ink,theme.seal,theme.paint,scale);
+  scroll.position.set(0,(sTop+sBot)/2,-d/2+0.66);g.add(scroll);
+  scroll.traverse(o=>{if(o.isMesh)o.userData.art=`${theme.hall} · ${theme.ink.join('，')}`;});
+
+  // 楹联竖牌：右为上联、左为下联
+  const cH=scrollH*0.94, cScale=cH/2.55;
+  for(const sx of [-1,1]){
+    const c=mkCouplet(theme.side[sx>0?1:0],cScale);
+    c.position.set(sx*(scale+0.78),(sTop+sBot)/2,-d/2+0.68);
+    c.traverse(o=>{if(o.isMesh)o.userData.art=`${theme.hall} · ${theme.side.join('，')}`;});
+    g.add(c);
+  }
+
+  // ---- 侧壁：纯山水画屏（与后壁文字呼应）----
+  const sideH=Math.max(1.4,Math.min(3.05,wallH-1.35));
+  const sideScale=sideH/3.3;
+  for(const sx of [-1,1]){
+    const s=mkScroll([],theme.seal,true,sideScale);
+    s.position.set(sx*(w/2-1.05),y0+0.25+sideH/2,0);
+    s.rotation.y=-sx*Math.PI/2;
+    s.traverse(o=>{if(o.isMesh)o.userData.art=`${theme.hall} · 山水图`;});
+    g.add(s);
+  }
+  // 两侧展案与文创（贴近后壁，入楼时正好落入视野下部）
+  const itemScale=Math.min(1.15,Math.max(0.62,w/19));
+  const tx=Math.min(w*0.30,3.6), tz=-d*0.5+3.0;
+  theme.items.slice(0,2).forEach((it,i)=>{
+    const table=mkTable(2.0*Math.min(1,w/18),0.95,0.82);
+    table.position.set(i?tx:-tx,0,tz);g.add(table);
+    const ex=mkExhibit(it.type,it.name);
+    ex.position.set(i?tx:-tx,0.87,tz);
+    ex.scale.multiplyScalar(itemScale);
+    ex.userData.baseY=0.87;
+    g.add(ex);
+  });
+  return g;
+}
+
+
 // 黄鹤楼：五层重檐 · 攒尖宝顶 · 金瓦朱柱（依据模型参考图重建）
 function buildHuangHe(){
   const grp=new THREE.Group();
@@ -878,9 +1392,11 @@ function buildHuangHe(){
   ];
   let y=platformTop;
   let topFloor=null;
+  const floorRecs=[];
   floors.forEach((f,i)=>{
     const nf=floors[i+1];
     if(i===floors.length-1)topFloor={base:y,w:f.w,wallH:f.h*0.95};
+    const fy=y;
     const floor=makeFloor({
       w:f.w,d:f.d,h:f.h,roofH:f.h*0.66,colorWall:colors.wall,colorWood:colors.wood,roofColor:colors.roof,
       eaveLen:f.eave,upturn:0.95,curve:1.25,capW:nf?nf.w+1.6:f.w*0.52,capD:nf?nf.d+1.6:f.d*0.52,
@@ -905,6 +1421,25 @@ function buildHuangHe(){
         post.position.set(isX?px:t,(rh+0.1)/2,isX?pz:t);floor.add(post);
       }
     });
+
+    // ---- 楼内展厅：楼板 / 字画挂轴 / 展案文创 / 内部灯光 ----
+    const theme=FLOOR_THEMES[i];
+    if(theme){
+      const inter=buildInterior(f.w,f.d,f.h*0.95,theme);
+      floor.add(inter);
+      const inLight=new THREE.PointLight(0xffd095,2.8,34,1.5);
+      inLight.position.set(0,f.h*0.72,0);
+      inLight.visible=false;floor.add(inLight);
+      // 分解时的楼层标牌（随楼层一起升起）
+      const label=makeLabel(`${theme.floor} · ${theme.hall}`);
+      const tw=label.userData.texW||256;
+      label.scale.set(2.9*tw/64,2.9,1);
+      label.position.set(0,(floor.userData.roofTop||f.h)+1.6,0);
+      label.visible=false;floor.add(label);
+      const facade=[];
+      floor.traverse(o=>{if(o.userData.facade)facade.push(o);});
+      floorRecs.push({group:floor,baseY:fy,h:f.h,w:f.w,d:f.d,light:inLight,label,facade,facadeOn:false});
+    }
 
     y+=floor.userData.roofTop;
   });
@@ -931,13 +1466,15 @@ function buildHuangHe(){
   const goldMat=new THREE.MeshStandardMaterial({color:'#c9a227',metalness:0.7,roughness:0.32,emissive:'#2e2008',emissiveIntensity:0.25});
   const topY=y;
   const plY=topFloor.base+topFloor.wallH*0.72, plZ=topFloor.w/2+0.16;
+  // 顶层匾额与宝顶归入 topGroup，楼体分解时随最高层一起升起
+  const topGroup=new THREE.Group();grp.add(topGroup);
   for(const side of [1,-1]){
     const frame=new THREE.Mesh(new THREE.BoxGeometry(5.4,2.0,0.2),goldMat);
-    frame.position.set(0,plY,side*(plZ+0.12));grp.add(frame);
+    frame.position.set(0,plY,side*(plZ+0.12));topGroup.add(frame);
     const pl=new THREE.Mesh(new THREE.BoxGeometry(5.0,1.7,0.1),plaqueMat);
     pl.position.set(0,plY,side*(plZ+0.24));
     if(side<0)pl.rotation.y=Math.PI;
-    grp.add(pl);
+    topGroup.add(pl);
   }
   // 首层匾额（更宽）
   const bigFrame=new THREE.Mesh(new THREE.BoxGeometry(9.0,2.9,0.24),goldMat);
@@ -949,19 +1486,19 @@ function buildHuangHe(){
   const gold=new THREE.MeshStandardMaterial({color:'#e8c840',metalness:0.85,roughness:0.28,emissive:'#5a3d08',emissiveIntensity:0.3});
   const apex=y+0.25;
   const seat=new THREE.Mesh(new THREE.CylinderGeometry(0.5,0.78,0.42,14),gold);
-  seat.position.y=apex+0.2;grp.add(seat);
+  seat.position.y=apex+0.2;topGroup.add(seat);
   for(let i=0;i<4;i++){
     const ring=new THREE.Mesh(new THREE.TorusGeometry(0.52-i*0.07,0.09,8,20),gold);
-    ring.rotation.x=Math.PI/2;ring.position.y=apex+0.62+i*0.2;grp.add(ring);
+    ring.rotation.x=Math.PI/2;ring.position.y=apex+0.62+i*0.2;topGroup.add(ring);
   }
   const neck=new THREE.Mesh(new THREE.CylinderGeometry(0.16,0.24,0.7,10),gold);
-  neck.position.y=apex+1.5;grp.add(neck);
+  neck.position.y=apex+1.5;topGroup.add(neck);
   const gourdLow=new THREE.Mesh(new THREE.SphereGeometry(0.56,16,12),gold);
-  gourdLow.scale.set(1,0.92,1);gourdLow.position.y=apex+2.0;grp.add(gourdLow);
+  gourdLow.scale.set(1,0.92,1);gourdLow.position.y=apex+2.0;topGroup.add(gourdLow);
   const gourdTop=new THREE.Mesh(new THREE.SphereGeometry(0.36,14,12),gold);
-  gourdTop.position.y=apex+2.78;grp.add(gourdTop);
+  gourdTop.position.y=apex+2.78;topGroup.add(gourdTop);
   const spike=new THREE.Mesh(new THREE.ConeGeometry(0.08,0.62,8),gold);
-  spike.position.y=apex+3.36;grp.add(spike);
+  spike.position.y=apex+3.36;topGroup.add(spike);
 
   // ---- 门前铜鹤一对 ----
   const craneMat=new THREE.MeshStandardMaterial({color:'#c9973a',metalness:0.75,roughness:0.36,emissive:'#3a2a06',emissiveIntensity:0.18});
@@ -1001,6 +1538,13 @@ function buildHuangHe(){
       new THREE.MeshStandardMaterial({color:'#e8c840',metalness:0.5,roughness:0.5}));
     tassel.position.set(sx*11.4,platformTop+3.85,sz*11.4);grp.add(tassel);
   }
+
+  // ---- 分解数据：五层楼身 + 顶层匾额宝顶 ----
+  grp.userData.explode={
+    floors:floorRecs,          // {group, baseY, light, label, facade}
+    topGroup,                  // 顶层匾额 + 攒尖宝顶
+    spread:5.0                 // 每层拉开的间距
+  };
 
   return grp;
 }
@@ -1188,8 +1732,8 @@ function addSteps(parent,w,y,stoneTex){
 /* ---------------------------- 4. 场景初始化 ---------------------------- */
 const HILL_H=7;               // 蛇山台顶高度
 const scene=new THREE.Scene();
-scene.background=new THREE.Color(0x8fb0cc);
-scene.fog=new THREE.Fog(0xc0c9cd, 150, 680);
+scene.background=new THREE.Color(0x7fb0d8);
+scene.fog=new THREE.Fog(0x9fbdd2, 240, 1000);
 
 const camera=new THREE.PerspectiveCamera(52, innerWidth/innerHeight, 0.1, 2400);
 camera.position.set(0, 24, 104);
@@ -1200,32 +1744,34 @@ renderer.setPixelRatio(Math.min(devicePixelRatio,2));
 renderer.shadowMap.enabled=true;
 renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure=1.55;
+renderer.toneMappingExposure=1.0;
 renderer.outputColorSpace=THREE.SRGBColorSpace;
 
-// 光照（整体提亮 + 前置补光 + 侧向补光）
-const hemi=new THREE.HemisphereLight(0xeaf4ff,0xa89878,1.25);
+// 光照（压低环境光，保留阳光方向感与明暗层次）
+const hemi=new THREE.HemisphereLight(0xdfeaf6,0x7a6a52,0.5);
 scene.add(hemi);
-const sun=new THREE.DirectionalLight(0xffd9ae,2.5);
-sun.position.set(-90,72,150);sun.castShadow=true;
-sun.shadow.mapSize.set(2048,2048);
+const sun=new THREE.DirectionalLight(0xffd9ae,1.7);
+const sunOffset=new THREE.Vector3(-90,72,150);
+sun.position.copy(sunOffset);sun.castShadow=true;
+scene.add(sun.target);                        // 加入场景，阴影相机才能跟随视点
+sun.shadow.mapSize.set(3072,3072);
 sun.shadow.camera.left=-120;sun.shadow.camera.right=120;
 sun.shadow.camera.top=120;sun.shadow.camera.bottom=-120;
 sun.shadow.camera.near=1;sun.shadow.camera.far=300;
 sun.shadow.bias=-0.0005;
 scene.add(sun);
-const amb=new THREE.AmbientLight(0xa8a8c0,0.75);
+const amb=new THREE.AmbientLight(0x8f97b0,0.25);
 scene.add(amb);
 // 前置补光灯（从相机初始方向照射建筑正面，提亮暗部）
-const frontFill=new THREE.DirectionalLight(0xfff4e0,1.15);
+const frontFill=new THREE.DirectionalLight(0xfff4e0,0.35);
 frontFill.position.set(0,35,120);scene.add(frontFill);
 // 前置低角度补光（照亮台基和地面）
-const frontLow=new THREE.DirectionalLight(0xfff8ea,0.6);
+const frontLow=new THREE.DirectionalLight(0xfff8ea,0.2);
 frontLow.position.set(0,8,140);scene.add(frontLow);
 // 侧向补光（照亮建筑侧面）
-const sideFill=new THREE.DirectionalLight(0xe8f0ff,0.75);
+const sideFill=new THREE.DirectionalLight(0xe8f0ff,0.25);
 sideFill.position.set(-100,50,-30);scene.add(sideFill);
-const sideFill2=new THREE.DirectionalLight(0xffeedd,0.65);
+const sideFill2=new THREE.DirectionalLight(0xffeedd,0.2);
 sideFill2.position.set(100,40,-60);scene.add(sideFill2);
 
 // 陆地（蛇山脚下的武昌城地坪，向北展开）
@@ -1291,10 +1837,10 @@ function texMist(){
 }
 const mistTex=texMist();
 const mists=[];
-for(let i=0;i<7;i++){
-  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:mistTex,transparent:true,depthWrite:false,opacity:0.34}));
-  sp.scale.set(150+Math.random()*90,26+Math.random()*10,1);
-  sp.position.set((Math.random()-0.5)*260, 2+Math.random()*4, 120+Math.random()*230);
+for(let i=0;i<3;i++){
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:mistTex,transparent:true,depthWrite:false,opacity:0.1}));
+  sp.scale.set(130+Math.random()*70,14+Math.random()*6,1);
+  sp.position.set((Math.random()-0.5)*260, 1.2+Math.random()*2, 300+Math.random()*160);
   scene.add(sp);
   mists.push({sp,ph:Math.random()*10,vx:0.4+Math.random()*0.5});
 }
@@ -1308,8 +1854,8 @@ function texGlow(inner,outer){
   const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t;
 }
 const sunSprite=new THREE.Sprite(new THREE.SpriteMaterial({map:texGlow('rgba(255,246,214,0.95)','rgba(255,186,96,0.55)'),
-  transparent:true,depthWrite:false,blending:THREE.AdditiveBlending}));
-sunSprite.scale.set(130,130,1);sunSprite.position.set(-170,62,620);scene.add(sunSprite);
+  transparent:true,depthWrite:false,opacity:0.45,blending:THREE.AdditiveBlending}));
+sunSprite.scale.set(90,90,1);sunSprite.position.set(-170,58,760);scene.add(sunSprite);
 
 // 江上帆船
 const boats=[];
@@ -1686,7 +2232,7 @@ function hillY(r){
   for(const sx of [-1,1]){
     const rail=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.9,len),mMat);
     rail.position.set(sx*(stairW/2+0.3),HILL_H/2+0.45,25.2+10.4);
-    rail.rotation.x=-ang;rail.castShadow=true;scene.add(rail);
+    rail.rotation.x=ang;rail.castShadow=true;scene.add(rail);
     for(let i=0;i<=6;i++){
       const t=i/6;
       const pz=25.2+20.8*t, py=HILL_H*(1-t);
@@ -1713,7 +2259,9 @@ function hillY(r){
     const da=Math.atan2(Math.sin(a),Math.cos(a));
     const r=27.0+Math.random()*19;
     if(Math.abs(da)<0.42)continue;            // 正面台阶留空
-    addPine(Math.sin(a)*r,hillY(r)-0.2,Math.cos(a)*r,0.8+Math.random()*0.7);
+    const px=Math.sin(a)*r, pz=Math.cos(a)*r;
+    if(Math.abs(px)<6.4 && pz>23.5 && pz<48)continue; // 台阶与石栏四周留空，避免树穿进台阶
+    addPine(px,hillY(r)-0.2,pz,0.8+Math.random()*0.7);
   }
   // 山脚与江岸的树
   for(let i=0;i<16;i++){
@@ -1763,11 +2311,11 @@ function hillY(r){
     const az=50.5;
     const colMat=new THREE.MeshStandardMaterial({color:'#a02a22',roughness:0.7});
     const baseMat=new THREE.MeshStandardMaterial({map:texMarble(),color:0xe6e2d6,roughness:0.8});
-    const cols=[[-7.0,6.6],[-2.6,7.6],[2.6,7.6],[7.0,6.6]];
+    const cols=[[-7.0,7.15],[-2.6,7.55],[2.6,7.55],[7.0,7.15]];
     cols.forEach(([x,h])=>{
-      const b=new THREE.Mesh(new THREE.BoxGeometry(0.9,0.5,0.9),baseMat);
+      const b=new THREE.Mesh(new THREE.BoxGeometry(1.05,0.5,1.05),baseMat);
       b.position.set(x,0.25,az);scene.add(b);
-      const c=new THREE.Mesh(new THREE.CylinderGeometry(0.3,0.34,h,10),colMat);
+      const c=new THREE.Mesh(new THREE.CylinderGeometry(0.36,0.42,h,12),colMat);
       c.position.set(x,h/2,az);c.castShadow=true;scene.add(c);
     });
     // 额枋
@@ -1914,7 +2462,7 @@ const pavilionMeshes=[];
 PAVILIONS.forEach(p=>{
   const m=p.build();
   m.position.set(p.pos[0],p.pos[1],p.pos[2]);
-  m.userData={id:p.id,name:p.name,info:p.info};
+  Object.assign(m.userData,{id:p.id,name:p.name,info:p.info});
   scene.add(m);
   pavilionMeshes.push(m);
   // 标签（用Sprite）
@@ -1924,8 +2472,9 @@ PAVILIONS.forEach(p=>{
   p.label=label;
 });
 
-/* ---------------------------- 5.5 鹤小仙（黄鹤楼 IP 立牌） ---------------------------- */
+/* ---------------------------- 5.5 鹤悠悠（黄鹤楼 IP 立牌） ---------------------------- */
 function loadIPTex(url){
+  if(!USE_REAL_TEXTURES)return new Promise(()=>{}); // 未启用真实纹理：静默跳过，不产生 404
   return new Promise((resolve,reject)=>{
     const img=new Image();
     img.onload=()=>{
@@ -1947,13 +2496,13 @@ loadIPTex('textures/ip_huanghe.png').then(tex=>{
   const plane=new THREE.Mesh(new THREE.PlaneGeometry(w,IP_H),mat);
   plane.position.set(IP_POS[0],IP_BASE+IP_H/2,IP_POS[2]);
   plane.castShadow=true;
-  plane.userData={isIP:true,pavId:'huanghe',ipName:'鹤小仙',baseRotY:0};
+  plane.userData={isIP:true,pavId:'huanghe',ipName:'鹤悠悠',baseRotY:0};
   scene.add(plane);
   const stand=new THREE.Mesh(new THREE.CylinderGeometry(1.35,1.6,IP_BASE,24),
     new THREE.MeshStandardMaterial({color:0xb8b0a0,roughness:0.85,map:getStoneTex()}));
   stand.position.set(IP_POS[0],IP_BASE/2,IP_POS[2]);stand.receiveShadow=true;stand.castShadow=true;
   scene.add(stand);
-  const nameSp=makeLabel('鹤小仙');
+  const nameSp=makeLabel('鹤悠悠');
   nameSp.scale.set(4.5,1.1,1);
   nameSp.position.set(IP_POS[0],IP_BASE+IP_H+0.75,IP_POS[2]);
   scene.add(nameSp);
@@ -1961,16 +2510,18 @@ loadIPTex('textures/ip_huanghe.png').then(tex=>{
 }).catch(e=>console.error('IP立牌创建失败:',e));
 
 function makeLabel(text){
-  const c=makeCanvas(256,64),x=c.getContext('2d');
-  x.fillStyle='rgba(0,0,0,0)';x.fillRect(0,0,256,64);
+  const W=Math.max(256,text.length*40+40),H=64;
+  const c=makeCanvas(W,H),x=c.getContext('2d');
+  x.fillStyle='rgba(0,0,0,0)';x.fillRect(0,0,W,H);
   x.font='bold 36px "Microsoft YaHei",sans-serif';
   x.textAlign='center';x.textBaseline='middle';
   x.shadowColor='rgba(0,0,0,0.9)';x.shadowBlur=8;
-  x.fillStyle='#f0d9a0';x.fillText(text,128,32);
+  x.fillStyle='#f0d9a0';x.fillText(text,W/2,H/2);
   const tex=new THREE.CanvasTexture(c);
   const mat=new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false});
   const sp=new THREE.Sprite(mat);
-  sp.scale.set(10,2.5,1);
+  sp.scale.set(10*W/256,2.5,1);
+  sp.userData.texW=W;
   return sp;
 }
 
@@ -2143,6 +2694,14 @@ renderer.domElement.addEventListener('click',e=>{
     let obj=hits[0].object;
     // 优先：点到IP立牌
     if(obj.userData.isIP){onIPClick(obj);return;}
+    // 楼内挂轴：点击显示该层厅名与诗句
+    let art=obj;
+    while(art&&!art.userData.art)art=art.parent;
+    if(art&&art.userData.art){toast(art.userData.art);return;}
+    // 楼内文创 / 字画
+    let ex=obj;
+    while(ex&&!ex.userData.exhibit)ex=ex.parent;
+    if(ex&&ex.userData.exhibit){toast('楼内陈列 · '+ex.userData.exhibit);return;}
     while(obj&&!obj.userData.id)obj=obj.parent;
     if(obj&&obj.userData.id)showInfo(obj.userData);
   }
@@ -2153,6 +2712,12 @@ renderer.domElement.addEventListener('mousemove',e=>{
   if(hits.length>0){
     let obj=hits[0].object;
     if(obj.userData.isIP){renderer.domElement.style.cursor='pointer';return;}
+    let art=obj;
+    while(art&&!art.userData.art)art=art.parent;
+    if(art&&art.userData.art){renderer.domElement.style.cursor='pointer';return;}
+    let ex=obj;
+    while(ex&&!ex.userData.exhibit)ex=ex.parent;
+    if(ex&&ex.userData.exhibit){renderer.domElement.style.cursor='pointer';return;}
     let o=obj;
     while(o&&!o.userData.id)o=o.parent;
     renderer.domElement.style.cursor=o?'pointer':'default';
@@ -2203,6 +2768,7 @@ VIEWS.forEach((v,i)=>{
   el.onclick=()=>{
     listEl.querySelectorAll('button').forEach(b=>b.classList.remove('on'));
     el.classList.add('on');
+    if(exploded)collapsedExplode();
     flyToView(v);
     toast(v.name);
   };
@@ -2233,6 +2799,112 @@ function updateFly(dt){
   orbit.target.lerpVectors(flyFrom.tgt,flyTgt.tgt,e);
 }
 
+/* ------------------------- 8.5 楼体分解（逐层展开看内部） ------------------------- */
+const EXPLODE_VIEW={name:'分层剖视', meta:'五层楼身 · 内部陈列',
+  pos:[96,HILL_H+46,116], tgt:[0,HILL_H+30,0]};
+let exploded=false, explodeT=0, inInterior=false, interiorIdx=-1;
+
+// 仅复位按钮与状态，不触发镜头动画（供切换其它视角时调用）
+function collapsedExplode(){
+  exploded=false;
+  if(inInterior){
+    inInterior=false;interiorIdx=-1;
+    orbit.minDistance=14;orbit.maxDistance=280;
+    const ib=$('btn-interior');if(ib){ib.classList.remove('on');ib.textContent='入楼观展';}
+  }
+  const b=$('btn-explode');
+  b.classList.remove('on');
+  b.textContent='分解楼体';
+}
+
+function setExplode(on,noFly){
+  exploded=on;
+  const btn=$('btn-explode');
+  btn.classList.toggle('on',on);
+  btn.textContent=on?'合拢楼体':'分解楼体';
+  if(walk.active)setWalk(false);
+  listEl.querySelectorAll('button').forEach(b=>b.classList.remove('on'));
+  if(!noFly)flyToView(on?EXPLODE_VIEW:VIEWS[0]);
+  toast(on?'楼体分解 · 五层内部陈列依次展现':'楼体合拢 · 恢复原貌');
+}
+
+// 每帧推进分解动画：楼身逐层升起、隐藏外墙、点亮楼层
+function updateExplode(dt){
+  const target=exploded?1:0;
+  if(explodeT===target)return;
+  explodeT+=Math.sign(target-explodeT)*dt*2.2;
+  explodeT=Math.max(0,Math.min(1,explodeT));
+  const k=explodeT<0.5?2*explodeT*explodeT:1-Math.pow(-2*explodeT+2,2)/2;
+  const E=pavilionMeshes[0]&&pavilionMeshes[0].userData.explode;
+  if(!E)return;
+  const shown=k>0.06;
+  E.floors.forEach((f,i)=>{
+    f.group.position.y=f.baseY+i*E.spread*k;
+    if(f.facadeOn!==shown){
+      f.facadeOn=shown;
+      f.facade.forEach(o=>{o.visible=!shown;});
+      f.light.visible=shown;
+      f.label.visible=shown;
+    }
+  });
+  if(E.topGroup)E.topGroup.position.y=(E.floors.length-1)*E.spread*k;
+}
+$('btn-explode').onclick=()=>setExplode(!exploded);
+
+/* ------------------------- 8.6 入楼观展（走进楼内逐层近观字画） ------------------------- */
+function flyRaw(pos,tgt,dur){
+  if(walk.active)setWalk(false);
+  flyFrom={pos:camera.position.clone(),tgt:orbit.target.clone()};
+  flyTgt={pos:pos,tgt:tgt};
+  flyT=0;flyDur=dur||1.05;
+}
+function interiorCam(i){
+  const E=pavilionMeshes[0]&&pavilionMeshes[0].userData.explode;
+  if(!E||!E.floors[i])return;
+  const f=E.floors[i];
+  const gy=pavilionMeshes[0]?pavilionMeshes[0].position.y:0;  // 楼体组的世界偏移（黄鹤楼立于蛇山之巅）
+  const cy=gy+f.baseY+i*E.spread+f.h*0.34;       // 分解后该层楼板之上的视点（低于宫灯，保证后壁可见）
+  flyRaw(new THREE.Vector3(0,cy,Math.min(f.d*0.26,3.6)),
+         new THREE.Vector3(0,cy,-f.d*0.5+1.0),1.05);
+}
+function playInterior(i){
+  const E=pavilionMeshes[0]&&pavilionMeshes[0].userData.explode;
+  orbit.minDistance=1.2;orbit.maxDistance=40;     // 放开近距限制，才能站进层内
+  if(E)E.floors.forEach((f,k)=>{if(f.light)f.light.intensity=(k===i?6.4:4.0);});
+  toast(`${FLOOR_THEMES[i].floor} · ${FLOOR_THEMES[i].hall}`);
+  // 分解尚未到位时先等动画走完，避免相机落进还没拉开的楼层
+  let tries=0;
+  const go=()=>{
+    if(!inInterior)return;
+    if(explodeT<0.97&&tries++<120){requestAnimationFrame(go);return;}
+    interiorCam(i);
+  };
+  requestAnimationFrame(go);
+}
+function enterInterior(i){
+  if(!exploded)setExplode(true,true);
+  inInterior=true;interiorIdx=i;
+  const b=$('btn-interior');
+  b.classList.add('on');
+  b.textContent=i>=4?'退出楼内':`下一层 · ${i+2}/5`;
+  playInterior(i);
+}
+function exitInterior(){
+  inInterior=false;interiorIdx=-1;
+  orbit.minDistance=14;orbit.maxDistance=280;
+  const b=$('btn-interior');b.classList.remove('on');b.textContent='入楼观展';
+  const E=pavilionMeshes[0]&&pavilionMeshes[0].userData.explode;
+  if(E)E.floors.forEach(f=>{if(f.light)f.light.intensity=4.0;});
+  setExplode(false);
+  toast('已出楼 · 回到全景');
+}
+$('btn-interior').onclick=()=>{
+  if(!inInterior)enterInterior(0);
+  else if(interiorIdx>=4)exitInterior();
+  else enterInterior(interiorIdx+1);
+};
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&inInterior)exitInterior();});
+
 /* ---------------------------- 9. 控制按钮 ---------------------------- */
 let toastTimer=null;
 function toast(msg){
@@ -2246,6 +2918,7 @@ $('btn-orbit').onclick=()=>setWalk(false);
 $('btn-walk').onclick=()=>setWalk(true);
 $('btn-overview').onclick=()=>{
   if(walk.active)setWalk(false);
+  if(exploded)collapsedExplode();
   flyToView(VIEWS[4]);
 };
 $('btn-daynight').onclick=()=>{toggleDayNight();toast(isNight?'夜色 · 星河灯影':'白昼 · 江城晴光');};
@@ -2298,18 +2971,18 @@ function makeStars(){
 
 /* ---------------------------- 9.5 四季切换系统 ---------------------------- */
 const SEASONS=[
-  {key:'春',sky:0x9ecdf2,fog:0xc2def0,sunC:0xfff2d8,sunI:2.3,hemiI:1.25,ambI:0.75,fillI:1.1,
-   ground:0xffffff,canopy:[0x6fbf4a,0x8fd45e,0x58b03e],pine:0x3a8a4e,flower:0xffb7c5,
-   roof:null,exposure:1.55},
-  {key:'夏',sky:0x63b0f5,fog:0xa8d4f0,sunC:0xfff5e0,sunI:2.6,hemiI:1.35,ambI:0.8,fillI:1.25,
-   ground:0xdfffd8,canopy:[0x1e6b2a,0x2d8a3e,0x177024],pine:0x1f6b34,flower:0xff5577,
-   roof:null,exposure:1.6},
-  {key:'秋',sky:0xa8bdd0,fog:0xd0c8b0,sunC:0xffe0b0,sunI:2.1,hemiI:1.1,ambI:0.7,fillI:1.0,
-   ground:0xd8c8a0,canopy:[0xd4902a,0xc8552a,0xe8b040],pine:0x4a7a3a,flower:0xd4a017,
-   roof:null,exposure:1.45},
-  {key:'冬',sky:0xd4e2ee,fog:0xe2e8ee,sunC:0xe8f0ff,sunI:1.9,hemiI:1.05,ambI:0.85,fillI:1.05,
-   ground:0xeef2f6,canopy:[0xe8f0f4,0xdce8ee,0xf0f4f8],pine:0xcfdde4,flower:0xf4f4f4,
-   roof:0xf0f4f8,exposure:1.4},
+  {key:'春',sky:0x82b4dd,fog:0xa8c4d8,sunC:0xffe7c2,sunI:1.7,hemiI:0.5,ambI:0.25,fillI:0.35,
+   ground:0xd9cfbc,canopy:[0x4f9a34,0x70b345,0x3d852c],pine:0x2a6639,flower:0xff9db3,
+   roof:null,exposure:1.0},
+  {key:'夏',sky:0x4c9fe0,fog:0x8fbede,sunC:0xfff0d6,sunI:1.9,hemiI:0.52,ambI:0.26,fillI:0.38,
+   ground:0xc6d6b6,canopy:[0x14501e,0x1f6430,0x0f4f1a],pine:0x175027,flower:0xcf3f5e,
+   roof:null,exposure:0.98},
+  {key:'秋',sky:0x93a9bf,fog:0xb7ab8f,sunC:0xffdca6,sunI:1.55,hemiI:0.45,ambI:0.23,fillI:0.3,
+   ground:0xbfa77e,canopy:[0xb06d18,0xa63f1c,0xc48a28],pine:0x38592b,flower:0xaa7d0f,
+   roof:null,exposure:0.95},
+  {key:'冬',sky:0xb9cee0,fog:0xc2d2de,sunC:0xe4eeff,sunI:1.45,hemiI:0.55,ambI:0.3,fillI:0.35,
+   ground:0xd5e0e8,canopy:[0xc9d6de,0xbccbd4,0xd4e0e6],pine:0xb0c0ca,flower:0xdde6ec,
+   roof:0xe0eaf2,exposure:1.0},
 ];
 let seasonIdx=0;
 let snowPts=null;
@@ -2481,8 +3154,11 @@ function animate(){
   const dt=Math.min(clock.getDelta(),0.05);
   updateFly(dt);
   updateWalk(dt);
+  updateExplode(dt);
   // 标签始终面向相机
   PAVILIONS.forEach(p=>{if(p.label)p.label.quaternion.copy(camera.quaternion);});
+  const ex0=pavilionMeshes[0]&&pavilionMeshes[0].userData.explode;
+  if(ex0)ex0.floors.forEach(f=>{if(f.label.visible)f.label.quaternion.copy(camera.quaternion);});
   // 水面波动
   if(water.material.map)water.material.map.offset.x+=dt*0.02;
   // 冬季雪花下落
@@ -2556,6 +3232,9 @@ function animate(){
   kite.position.x=34+Math.sin(T*0.5)*2.2; kite.position.y=38+Math.sin(T*0.7)*1.6;
   kite.rotation.z=Math.sin(T*0.6)*0.15; kite.rotation.y=Math.sin(T*0.4)*0.3;
   updateMeteors(dt);
+  // 阴影相机跟随视点：避免阴影范围边界在画面中切出一条斜向亮暗分界线
+  sun.target.position.set(camera.position.x*0.7,0,camera.position.z*0.7);
+  sun.position.copy(sun.target.position).add(sunOffset);
   orbit.update();
   renderer.render(scene,camera);
 }
@@ -2603,3 +3282,4 @@ addEventListener('resize',()=>{
 </script>
 </body>
 </html>
+

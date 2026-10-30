@@ -185,7 +185,7 @@
   .posters .sec-title{color:#f7ecd0}
   .posters .sec-title em{color:var(--gold2)}
   .posters .sec-sub{color:rgba(233,222,196,.5)}
-  .poster-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+  .poster-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
   .poster-card{margin:0;position:relative;border-radius:16px;overflow:hidden;
     border:1px solid rgba(227,196,121,.16);background:#16232d;
     box-shadow:0 26px 50px -34px rgba(0,0,0,.9);
@@ -211,8 +211,9 @@
   .market{position:relative;
     background:linear-gradient(180deg,rgba(239,229,207,0),rgba(239,229,207,.85) 14%,rgba(239,229,207,.85) 86%,rgba(239,229,207,0))}
   .chips{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:0 0 clamp(22px,3vw,32px)}
-  .chip{font-size:11px;letter-spacing:.14em;padding:7px 16px;border-radius:999px;
-    border:1px solid rgba(27,42,51,.14);color:var(--ink2);background:rgba(255,250,240,.6);transition:.25s}
+  .chip{font-size:11px;letter-spacing:.14em;padding:7px 16px;border-radius:999px;cursor:pointer;
+    user-select:none;border:1px solid rgba(27,42,51,.14);color:var(--ink2);
+    background:rgba(255,250,240,.6);transition:.25s}
   .chip.on{background:var(--ink);border-color:var(--ink);color:#f2e6c8}
   .chip:hover{border-color:rgba(156,47,39,.45);color:var(--red)}
   .chip.on:hover{color:#f2e6c8}
@@ -221,13 +222,7 @@
     padding:12px 12px 18px;box-shadow:var(--shadow);transition:.32s}
   .product:hover{transform:translateY(-6px);border-color:rgba(193,154,74,.55)}
   .product .shot{position:relative;border-radius:12px;overflow:hidden;background:#f1e7d0;aspect-ratio:1}
-  .product .shot .ph{position:absolute;inset:7px;z-index:1;display:flex;flex-direction:column;
-    align-items:center;justify-content:center;gap:6px;border-radius:8px;
-    border:1px dashed rgba(193,154,74,.55);pointer-events:none;text-align:center;
-    background:linear-gradient(160deg,#fffdf6,#f7eed9 60%,#f1e4c8)}
-  .product .shot .ph svg{width:26px;height:26px;opacity:.55}
-  .product .shot .ph b{font-family:var(--serif);font-size:11.5px;font-weight:400;letter-spacing:.18em;color:#8d7647}
-  .product .shot .ph span{font-size:9px;letter-spacing:.03em;color:#a9997a}
+  .product.is-hidden{display:none}
   .product .shot img{position:relative;z-index:2;width:100%;height:100%;object-fit:cover;display:block;transition:transform .7s}
   .product:hover .shot img{transform:scale(1.055)}
   .product .tag{position:absolute;left:10px;top:10px;z-index:3;font-size:9.5px;letter-spacing:.14em;
@@ -294,6 +289,14 @@
   .foot-links a:hover{color:var(--gold2)}
   .copy{display:flex;justify-content:space-between;margin-top:30px;padding-top:18px;
     border-top:1px solid rgba(227,196,121,.14);font-size:10.5px;letter-spacing:.16em}
+  /* 换图：点击任意照片即可选择本地图片即时替换 */
+  img.swappable{cursor:pointer}
+  img.swappable:hover{outline:2px solid var(--gold2);outline-offset:2px}
+  .reset-photo{position:fixed;right:22px;bottom:22px;z-index:60;padding:11px 18px;
+    font-family:var(--serif);font-size:12.5px;letter-spacing:.16em;color:#0f1a20;
+    background:linear-gradient(135deg,var(--gold3),var(--gold2));border:0;border-radius:999px;
+    cursor:pointer;box-shadow:0 10px 26px rgba(0,0,0,.28);transition:.25s}
+  .reset-photo:hover{transform:translateY(-2px);box-shadow:0 14px 32px rgba(0,0,0,.34)}
   .reveal{opacity:0;transform:translateY(24px);transition:opacity .8s ease,transform .8s cubic-bezier(.2,.7,.2,1)}
   .reveal.in{opacity:1;transform:none}
   @media (prefers-reduced-motion:reduce){
@@ -356,7 +359,7 @@
   <canvas id="meteorCanvas" aria-hidden="true"></canvas>
   <div class="tower-halo"></div>
   <img id="towerPhoto" src="assets/opt/hhl_tower.webp" alt="黄鹤楼楼体实景抠像" fetchpriority="high">
-  <img class="hero-ip" src="assets/opt/ip_huanghe_opt.webp" alt="鹤悠悠 IP 形象 鹤小仙">
+  <img class="hero-ip" src="assets/opt/ip_huanghe_opt.webp" alt="鹤悠悠 IP 形象">
   <div class="crane c1"><svg viewBox="0 0 60 30"><path d="M2 18 C 12 6 22 6 30 14 C 38 6 48 6 58 18"/></svg></div>
   <div class="crane c2"><svg viewBox="0 0 60 30"><path d="M2 18 C 12 6 22 6 30 14 C 38 6 48 6 58 18"/></svg></div>
   <div class="crane c3"><svg viewBox="0 0 60 30"><path d="M2 18 C 12 6 22 6 30 14 C 38 6 48 6 58 18"/></svg></div>
@@ -509,6 +512,22 @@
             <p>山水系列 · 04 · 水墨</p>
           </figcaption>
         </figure>
+        <figure class="poster-card reveal">
+          <img src="assets/posters/p5.jpg" alt="海报《晴川鹤唳》" loading="lazy" decoding="async">
+          <span class="badge">限量 30 版</span>
+          <figcaption>
+            <h3>晴川鹤唳</h3>
+            <p>山水系列 · 05 · 朝晖</p>
+          </figcaption>
+        </figure>
+        <figure class="poster-card reveal">
+          <img src="assets/posters/p6.jpg" alt="海报《江城夜泊》" loading="lazy" decoding="async">
+          <span class="badge">艺术微喷</span>
+          <figcaption>
+            <h3>江城夜泊</h3>
+            <p>江城系列 · 06 · 夜色</p>
+          </figcaption>
+        </figure>
       </div>
       <div class="poster-foot reveal">
         <span>海报可单张收藏，亦可整套装裱 · 每季更新一辑</span>
@@ -526,22 +545,18 @@
         <p class="sec-sub">飞檐、金瓦、诗笺化作日常小物</p>
       </div>
       <div class="chips reveal">
-        <span class="chip on">全部</span>
-        <span class="chip">冰箱贴</span>
-        <span class="chip">书签</span>
-        <span class="chip">盲盒</span>
-        <span class="chip">纸品</span>
-        <span class="chip">家居</span>
-        <span class="chip">配饰</span>
+        <span class="chip on" data-filter="all">全部</span>
+        <span class="chip" data-filter="fridge">冰箱贴</span>
+        <span class="chip" data-filter="bookmark">书签</span>
+        <span class="chip" data-filter="blind">盲盒</span>
+        <span class="chip" data-filter="paper">纸品</span>
+        <span class="chip" data-filter="home">家居</span>
+        <span class="chip" data-filter="acc">配饰</span>
       </div>
       <div class="market-grid">
         <!-- 文创图位：把实拍图放到 assets/market/m1.jpg … m8.jpg，建议 1:1 方图，放好即显示 -->
-        <article class="product reveal">
+        <article class="product reveal" data-cat="fridge">
           <div class="shot">
-            <div class="ph" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="#b08a3e" stroke-width="1.3"><rect x="3" y="4" width="18" height="15" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M4 16l4.5-4.5 3.5 3.5 3-3 4 4"/></svg>
-              <b>实拍图位</b><span>assets/market/m1.jpg</span>
-            </div>
             <img src="assets/market/m1.jpg" alt="鹤归冰箱贴" loading="lazy" onerror="this.remove()">
             <span class="tag">限定</span>
           </div>
@@ -549,61 +564,41 @@
           <p>立体飞檐配金瓦釉面，一贴带走整座楼。</p>
           <span class="series">飞檐系列</span>
         </article>
-        <article class="product reveal">
+        <article class="product reveal" data-cat="bookmark">
           <div class="shot">
-            <div class="ph" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="#b08a3e" stroke-width="1.3"><rect x="3" y="4" width="18" height="15" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M4 16l4.5-4.5 3.5 3.5 3-3 4 4"/></svg>
-              <b>实拍图位</b><span>assets/market/m2.jpg</span>
-            </div>
             <img src="assets/market/m2.jpg" alt="金瓦书签" loading="lazy" onerror="this.remove()">
           </div>
           <h3>金瓦书签</h3>
           <p>黄铜镂空，一线飞檐夹进书页。</p>
           <span class="series">形制系列</span>
         </article>
-        <article class="product reveal">
+        <article class="product reveal" data-cat="blind">
           <div class="shot">
-            <div class="ph" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="#b08a3e" stroke-width="1.3"><rect x="3" y="4" width="18" height="15" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M4 16l4.5-4.5 3.5 3.5 3-3 4 4"/></svg>
-              <b>实拍图位</b><span>assets/market/m3.jpg</span>
-            </div>
-            <img src="assets/market/m3.jpg" alt="鹤小仙盲盒" loading="lazy" onerror="this.remove()">
+            <img src="assets/market/m3.jpg" alt="鹤悠悠盲盒" loading="lazy" onerror="this.remove()">
             <span class="tag">新品</span>
           </div>
-          <h3>鹤小仙盲盒</h3>
+          <h3>鹤悠悠盲盒</h3>
           <p>六款形象随机一只，桌面上的小神仙。</p>
           <span class="series">IP 系列</span>
         </article>
-        <article class="product reveal">
+        <article class="product reveal" data-cat="home">
           <div class="shot">
-            <div class="ph" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="#b08a3e" stroke-width="1.3"><rect x="3" y="4" width="18" height="15" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M4 16l4.5-4.5 3.5 3.5 3-3 4 4"/></svg>
-              <b>实拍图位</b><span>assets/market/m4.jpg</span>
-            </div>
             <img src="assets/market/m4.jpg" alt="诗笺帆布袋" loading="lazy" onerror="this.remove()">
           </div>
           <h3>诗笺帆布袋</h3>
           <p>崔颢诗稿做底纹，原色帆布厚实耐用。</p>
           <span class="series">诗笺系列</span>
         </article>
-        <article class="product reveal">
+        <article class="product reveal" data-cat="paper">
           <div class="shot">
-            <div class="ph" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="#b08a3e" stroke-width="1.3"><rect x="3" y="4" width="18" height="15" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M4 16l4.5-4.5 3.5 3.5 3-3 4 4"/></svg>
-              <b>实拍图位</b><span>assets/market/m5.jpg</span>
-            </div>
             <img src="assets/market/m5.jpg" alt="晴川明信片" loading="lazy" onerror="this.remove()">
           </div>
           <h3>晴川明信片</h3>
           <p>江城八景一套八张，寄一张给远方。</p>
           <span class="series">江城系列</span>
         </article>
-        <article class="product reveal">
+        <article class="product reveal" data-cat="home">
           <div class="shot">
-            <div class="ph" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="#b08a3e" stroke-width="1.3"><rect x="3" y="4" width="18" height="15" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M4 16l4.5-4.5 3.5 3.5 3-3 4 4"/></svg>
-              <b>实拍图位</b><span>assets/market/m6.jpg</span>
-            </div>
             <img src="assets/market/m6.jpg" alt="五层纸雕灯" loading="lazy" onerror="this.remove()">
             <span class="tag">限定</span>
           </div>
@@ -611,24 +606,16 @@
           <p>开灯即是夜里的黄鹤楼，暖光不刺眼。</p>
           <span class="series">夜游系列</span>
         </article>
-        <article class="product reveal">
+        <article class="product reveal" data-cat="home">
           <div class="shot">
-            <div class="ph" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="#b08a3e" stroke-width="1.3"><rect x="3" y="4" width="18" height="15" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M4 16l4.5-4.5 3.5 3.5 3-3 4 4"/></svg>
-              <b>实拍图位</b><span>assets/market/m7.jpg</span>
-            </div>
             <img src="assets/market/m7.jpg" alt="云纹香插" loading="lazy" onerror="this.remove()">
           </div>
           <h3>云纹香插</h3>
           <p>黄铜云鹤小香插，附赠线香一支。</p>
           <span class="series">云鹤系列</span>
         </article>
-        <article class="product reveal">
+        <article class="product reveal" data-cat="acc">
           <div class="shot">
-            <div class="ph" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="#b08a3e" stroke-width="1.3"><rect x="3" y="4" width="18" height="15" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M4 16l4.5-4.5 3.5 3.5 3-3 4 4"/></svg>
-              <b>实拍图位</b><span>assets/market/m8.jpg</span>
-            </div>
             <img src="assets/market/m8.jpg" alt="云鹤丝巾" loading="lazy" onerror="this.remove()">
           </div>
           <h3>云鹤丝巾</h3>
@@ -680,7 +667,7 @@
     <div class="foot-grid">
       <div>
         <h4>关于本页</h4>
-        <p>「鹤悠悠」是黄鹤楼的独立数字漫游页：程序化重建楼体与蛇山环境，并配一位 IP 形象鹤小仙；海报与文创按季上新。</p>
+        <p>「鹤悠悠」是黄鹤楼的独立数字漫游页：程序化重建楼体与蛇山环境，并配一位 IP 形象鹤悠悠；海报与文创按季上新。</p>
       </div>
       <div>
         <h4>快速导航</h4>
@@ -691,12 +678,11 @@
           <a href="#posters">海报展廊</a>
           <a href="#market">文创市集</a>
           <a href="#poems">千古诗篇</a>
-          <a href="../huanghehou/index.html">四大名楼主页 ↗</a>
         </div>
       </div>
       <div>
         <h4>素材说明</h4>
-        <p>建筑、场景、IP 立牌均由页面内代码与贴图生成，可离线打开（建议用本地服务器访问）。海报与文创图为占位示意，替换即可上架。</p>
+        <p>建筑、场景、IP 立牌均由页面内代码与贴图生成，可离线打开（建议用本地服务器访问）。点击页面任意照片，即可选一张本地图片即时替换预览；要永久生效，把新图按同名覆盖 assets 下对应文件即可。</p>
       </div>
     </div>
     <div class="copy">
@@ -896,6 +882,73 @@ function onScroll(){
 }
 onScroll();
 addEventListener('scroll', onScroll, { passive: true });
+
+/* 文创分类筛选：点标签按系列过滤商品 */
+(function marketFilter(){
+  const chips = document.querySelectorAll('.chips .chip');
+  const items = Array.from(document.querySelectorAll('.market-grid .product'));
+  if (!chips.length || !items.length) return;
+  function apply(key){
+    chips.forEach(c => c.classList.toggle('on', c.dataset.filter === key));
+    items.forEach(el => {
+      const hide = key !== 'all' && el.dataset.cat !== key;
+      el.classList.toggle('is-hidden', hide);
+      if (!hide) el.classList.add('in');
+    });
+  }
+  chips.forEach(c => c.addEventListener('click', () => apply(c.dataset.filter)));
+})();
+
+/* 点击换图：选中本地图片即时替换预览；右下角按钮可一键还原原图 */
+(function photoSwapper(){
+  const SEL = '#towerPhoto, .arch-figure img, .craft-shot img, .poster-card img, .product .shot img';
+  const picker = document.createElement('input');
+  picker.type = 'file'; picker.accept = 'image/*';
+  picker.style.cssText = 'position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0';
+  document.body.appendChild(picker);
+
+  const resetBtn = document.createElement('button');
+  resetBtn.type = 'button';
+  resetBtn.className = 'reset-photo';
+  resetBtn.textContent = '还原照片';
+  resetBtn.hidden = true;
+  document.body.appendChild(resetBtn);
+
+  const ORIG = new Map();
+  let target = null;
+
+  document.querySelectorAll(SEL).forEach(img => {
+    ORIG.set(img, img.getAttribute('src'));
+    img.classList.add('swappable');
+    if (!img.title) img.title = '点击可替换为本地图片';
+    img.addEventListener('click', e => {
+      e.preventDefault();
+      target = img;
+      picker.value = '';
+      picker.click();
+    });
+  });
+
+  picker.addEventListener('change', () => {
+    const file = picker.files && picker.files[0];
+    if (!file || !target) return;
+    target.src = URL.createObjectURL(file);
+    target.removeAttribute('srcset');
+    target.dataset.swapped = '1';
+    resetBtn.hidden = false;
+  });
+
+  resetBtn.addEventListener('click', () => {
+    ORIG.forEach((src, img) => {
+      if (img.dataset.swapped !== '1') return;
+      const cur = img.getAttribute('src');
+      if (cur && cur.indexOf('blob:') === 0) URL.revokeObjectURL(cur);
+      img.setAttribute('src', src);
+      delete img.dataset.swapped;
+    });
+    resetBtn.hidden = true;
+  });
+})();
 </script>
 </body>
 </html>
